@@ -31,7 +31,18 @@ fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string("test3: hello nodejs from libclarity!"))
 }
 
-fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsString> {
+fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
+    let value_input_buffer = cx.argument::<JsBuffer>(0)?;
+    let clarity_value = cx
+        .borrow(&value_input_buffer, |data| {
+            ClarityValue::consensus_deserialize(&mut data.as_slice::<u8>())
+        })
+        .or_else(|e| cx.throw_error(format!("{}", e)))?;
+
+    Ok(cx.string(format!("{}", clarity_value)))
+}
+
+fn decode_clarity_value_hex_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let val_bytes =
         hex::decode(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
@@ -737,7 +748,14 @@ mod tests {
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("hello", hello)?;
-    cx.export_function("decodeClarityValue", decode_clarity_value)?;
+    cx.export_function(
+        "decodeClarityValueHexToRepr",
+        decode_clarity_value_hex_to_repr,
+    )?;
+    cx.export_function(
+        "decodeClarityValueBufferToRepr",
+        decode_clarity_value_buffer_to_repr,
+    )?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("inspectClarityValueArray", inspect_clarity_value_array)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
