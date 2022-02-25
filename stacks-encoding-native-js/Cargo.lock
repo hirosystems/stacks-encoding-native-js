@@ -93,15 +93,14 @@ dependencies = [
  "rand",
  "rand_chacha",
  "regex",
- "ripemd160",
+ "ripemd",
  "rusqlite",
  "secp256k1",
  "serde",
  "serde_derive",
  "serde_json",
  "serde_stacker",
- "sha2 0.8.2",
- "sha2-asm 0.5.5",
+ "sha2 0.10.2",
  "sha3",
  "siphasher",
  "slog",
@@ -790,14 +789,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
-name = "ripemd160"
-version = "0.8.0"
+name = "ripemd"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad5112e0dbbb87577bfbc56c42450235e3012ce336e29c5befd7807bd626da4a"
+checksum = "1facec54cb5e0dc08553501fa740091086d0259ad0067e0d4103448e4cb22ed3"
 dependencies = [
- "block-buffer 0.7.3",
- "digest 0.8.1",
- "opaque-debug",
+ "digest 0.10.3",
 ]
 
 [[package]]
@@ -840,9 +837,9 @@ checksum = "73b4b750c782965c211b42f022f59af1fbceabdd026623714f104152f1ec149f"
 
 [[package]]
 name = "secp256k1"
-version = "0.19.0"
+version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6179428c22c73ac0fbb7b5579a56353ce78ba29759b3b8575183336ea74cdfb"
+checksum = "9c42e6f1735c5f00f51e43e28d6634141f2bcad10931b2609ddd74a86d751260"
 dependencies = [
  "secp256k1-sys",
  "serde",
@@ -850,9 +847,9 @@ dependencies = [
 
 [[package]]
 name = "secp256k1-sys"
-version = "0.3.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11553d210db090930f4432bea123b31f70bbf693ace14504ea2a35e796c28dd2"
+checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
 dependencies = [
  "cc",
 ]
@@ -949,16 +946,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
  "digest 0.10.3",
- "sha2-asm 0.6.2",
-]
-
-[[package]]
-name = "sha2-asm"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7c2f225be6502f2134e6bbb35bb5e2957e41ffa0495ed08bce2e2b4ca885da4"
-dependencies = [
- "cc",
+ "sha2-asm",
 ]
 
 [[package]]
@@ -972,15 +960,12 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.8.2"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd26bc0e7a2e3a7c959bc494caf58b72ee0c71d67704e9520f736ca7e4853ecf"
+checksum = "881bf8156c87b6301fc5ca6b27f11eeb2761224c7081e69b409d5a1951a70c86"
 dependencies = [
- "block-buffer 0.7.3",
- "byte-tools",
- "digest 0.8.1",
+ "digest 0.10.3",
  "keccak",
- "opaque-debug",
 ]
 
 [[package]]
@@ -1044,15 +1029,14 @@ dependencies = [
  "libc",
  "percent-encoding",
  "rand",
- "ripemd160",
+ "ripemd",
  "rusqlite",
  "secp256k1",
  "serde",
  "serde_derive",
  "serde_json",
  "serde_stacker",
- "sha2 0.8.2",
- "sha2-asm 0.5.5",
+ "sha2 0.10.2",
  "sha3",
  "slog",
  "slog-term",

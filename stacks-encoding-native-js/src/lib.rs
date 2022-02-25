@@ -13,6 +13,7 @@ use stacks::chainstate::stacks::TransactionPayload;
 use stacks::chainstate::stacks::TransactionPayloadID;
 use stacks::chainstate::stacks::TransactionPostCondition;
 use stacks::chainstate::stacks::TransactionSmartContract;
+use stacks::util::hash::Hash160;
 use stacks::vm::types::PrincipalData;
 use stacks::{
     address::AddressHashMode,
@@ -709,45 +710,16 @@ impl NeonJsSerialize<(), Vec<u8>> for StacksMicroblockHeader {
     }
 }
 
-/*
-pub trait StacksMessageCodec {
-    /// serialize implementors _should never_ error unless there is an underlying
-    ///   failure in writing to the `fd`
-    fn consensus_serialize<W: Write>(&self, fd: &mut W) -> Result<(), Error>
-    where
-        Self: Sized;
-    fn consensus_deserialize<R: Read>(fd: &mut R) -> Result<Self, Error>
-    where
-        Self: Sized;
-    /// Convenience for serialization to a vec.
-    ///  this function unwraps any underlying serialization error
-    fn serialize_to_vec(&self) -> Vec<u8>
-    where
-        Self: Sized,
-    {
-        let mut bytes = vec![];
-        self.consensus_serialize(&mut bytes)
-            .expect("BUG: serialization to buffer failed.");
-        bytes
-    }
+fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
+    let address_version = cx.argument::<JsNumber>(0)?.value(&mut cx);
+    let address_bytes_arg = cx.argument::<JsBuffer>(1)?;
+    let address_hash160 = cx.borrow(&address_bytes_arg, |data| {
+        Hash160(data.as_slice::<u8>().try_into().unwrap())
+    });
+    let stacks_address = StacksAddress::new(address_version as u8, address_hash160);
+    let stacks_address_string = cx.string(stacks_address.to_string());
+    return Ok(stacks_address_string);
 }
-impl StacksMessageCodec for StacksTransaction {
-    fn consensus_serialize<W: Write>(&self, fd: &mut W) -> Result<(), codec_error> {
-        write_next(fd, &(self.version as u8))?;
-        write_next(fd, &self.chain_id)?;
-        write_next(fd, &self.auth)?;
-        write_next(fd, &(self.anchor_mode as u8))?;
-        write_next(fd, &(self.post_condition_mode as u8))?;
-        write_next(fd, &self.post_conditions)?;
-        write_next(fd, &self.payload)?;
-        Ok(())
-    }
-
-    fn consensus_deserialize<R: Read>(fd: &mut R) -> Result<StacksTransaction, codec_error> {
-        StacksTransaction::consensus_deserialize_with_len(fd).map(|(result, _)| result)
-    }
-}
-*/
 
 #[cfg(test)]
 mod tests {
@@ -769,5 +741,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("inspectClarityValueArray", inspect_clarity_value_array)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
+    cx.export_function("getStacksAddress", get_stacks_address)?;
     Ok(())
 }

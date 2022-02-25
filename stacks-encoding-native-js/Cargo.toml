@@ -4,6 +4,7 @@ version = "0.1.0"
 license = "ISC"
 edition = "2018"
 exclude = ["index.node"]
+resolver = "2"
 
 [lib]
 crate-type = ["cdylib"]
@@ -15,11 +16,12 @@ stacks_common = { package = "stacks-common", path = "../stacks-blockchain/stacks
 clarity = { package = "clarity", path = "../stacks-blockchain/clarity/." }
 stacks = { package = "blockstack-core", path = "../stacks-blockchain/." }
 hex = "0.4"
+
+[target.'cfg(all(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"), not(target_env = "msvc")))'.dependencies]
 sha2 = { version = "0.10", features = ["asm"] }
 
-# [dependencies.serde_json]
-# version = "1.0"
-# features = ["arbitrary_precision", "unbounded_depth"]
+[target.'cfg(any(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")), target_env = "msvc"))'.dependencies]
+sha2 = { version = "0.10" }
 
 [dependencies.neon]
 version = "0.9"
