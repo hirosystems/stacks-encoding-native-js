@@ -1,5 +1,7 @@
 use clarity::vm::types::signatures::TypeSignature as ClarityTypeSignature;
 use clarity::vm::types::Value as ClarityValue;
+use hex::FromHex;
+use hex::FromHexError;
 use neon::prelude::*;
 use sha2::Digest;
 use sha2::Sha512_256;
@@ -31,6 +33,13 @@ fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string("test3: hello nodejs from libclarity!"))
 }
 
+fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
+    if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
+        return decode_hex(&data.as_ref()[2..]);
+    }
+    FromHex::from_hex(data)
+}
+
 fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let value_input_buffer = cx.argument::<JsBuffer>(0)?;
     let clarity_value = cx
@@ -45,7 +54,7 @@ fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsSt
 fn decode_clarity_value_hex_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let val_bytes =
-        hex::decode(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
     let byte_cursor = &mut &val_bytes[..];
     let value = ClarityValue::consensus_deserialize(byte_cursor)
         .or_else(|e| cx.throw_error(format!("{}", e)))?;
@@ -55,7 +64,7 @@ fn decode_clarity_value_hex_to_repr(mut cx: FunctionContext) -> JsResult<JsStrin
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     let input_hex = cx.argument::<JsString>(0)?.value(&mut cx);
     let input_bytes =
-        hex::decode(input_hex).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        decode_hex(input_hex).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
     let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
 
@@ -87,7 +96,7 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
 fn inspect_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsString> {
     let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let val_bytes =
-        hex::decode(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
     let array_len = u32::from_be_bytes(val_bytes[0..4].try_into().unwrap());
     Ok(cx.string(array_len.to_string()))
 }
@@ -95,7 +104,7 @@ fn inspect_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsString> {
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
     let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let val_bytes =
-        hex::decode(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
     // let tx_id = Txid::from_stacks_tx(&val_bytes);
     let byte_cursor = &mut &val_bytes[..];
     let tx = StacksTransaction::consensus_deserialize(byte_cursor)
