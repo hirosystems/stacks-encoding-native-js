@@ -1,30 +1,24 @@
-use clarity::vm::types::signatures::TypeSignature as ClarityTypeSignature;
-use clarity::vm::types::Value as ClarityValue;
-use hex::FromHex;
-use hex::FromHexError;
+use clarity::vm::types::{
+    signatures::TypeSignature as ClarityTypeSignature, Value as ClarityValue,
+};
+use hex::{FromHex, FromHexError};
 use neon::prelude::*;
-use sha2::Digest;
-use sha2::Sha512_256;
-use stacks::chainstate::stacks::AssetInfo;
-use stacks::chainstate::stacks::AssetInfoID;
-use stacks::chainstate::stacks::PostConditionPrincipal;
-use stacks::chainstate::stacks::PostConditionPrincipalID;
-use stacks::chainstate::stacks::StacksMicroblockHeader;
-use stacks::chainstate::stacks::TransactionContractCall;
-use stacks::chainstate::stacks::TransactionPayload;
-use stacks::chainstate::stacks::TransactionPayloadID;
-use stacks::chainstate::stacks::TransactionPostCondition;
-use stacks::chainstate::stacks::TransactionSmartContract;
-use stacks::util::hash::Hash160;
-use stacks::vm::types::PrincipalData;
+use sha2::{Digest, Sha512_256};
 use stacks::{
     address::AddressHashMode,
+    chainstate::stacks::{
+        AssetInfo, AssetInfoID, PostConditionPrincipal, PostConditionPrincipalID,
+        StacksMicroblockHeader, TransactionContractCall, TransactionPayload, TransactionPayloadID,
+        TransactionPostCondition, TransactionSmartContract,
+    },
     chainstate::stacks::{
         MultisigSpendingCondition, SinglesigSpendingCondition, StacksTransaction, TransactionAuth,
         TransactionAuthField, TransactionAuthFieldID, TransactionAuthFlags,
         TransactionPublicKeyEncoding, TransactionSpendingCondition, TransactionVersion,
     },
     types::{chainstate::StacksAddress, StacksPublicKeyBuffer},
+    util::hash::Hash160,
+    vm::types::{PrincipalData, SequenceData},
 };
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
@@ -38,6 +32,169 @@ fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
         return decode_hex(&data.as_ref()[2..]);
     }
     FromHex::from_hex(data)
+}
+
+// Copied from non-public definition at
+// https://github.com/stacks-network/stacks-blockchain/blob/65570bbd8f6b2549e9b4d5bbe4c934538ec0cedc/clarity/src/vm/types/serialization.rs#L111
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Copy)]
+enum ClarityTypePrefix {
+    Int = 0,
+    UInt = 1,
+    Buffer = 2,
+    BoolTrue = 3,
+    BoolFalse = 4,
+    PrincipalStandard = 5,
+    PrincipalContract = 6,
+    ResponseOk = 7,
+    ResponseErr = 8,
+    OptionalNone = 9,
+    OptionalSome = 10,
+    List = 11,
+    Tuple = 12,
+    StringASCII = 13,
+    StringUTF8 = 14,
+}
+
+fn decode_clarity_val(
+    cx: &mut FunctionContext,
+    cur_obj: &JsObject,
+    val: &ClarityValue,
+) -> NeonResult<()> {
+    match val {
+        ClarityValue::Int(val) => {
+            let val_type = cx.number(ClarityTypePrefix::Int as u8);
+            cur_obj.set(cx, "type", val_type)?;
+            let val_string = cx.string(val.to_string());
+            cur_obj.set(cx, "value", val_string)?;
+        }
+        ClarityValue::UInt(val) => {
+            let val_type = cx.number(ClarityTypePrefix::UInt as u8);
+            cur_obj.set(cx, "type", val_type)?;
+            let val_string = cx.string(val.to_string());
+            cur_obj.set(cx, "value", val_string)?;
+        }
+        ClarityValue::Bool(val) => {
+            match val {
+                true => {
+                    let val_type = cx.number(ClarityTypePrefix::BoolTrue as u8);
+                    cur_obj.set(cx, "type", val_type)?
+                }
+                false => {
+                    let val_type = cx.number(ClarityTypePrefix::BoolFalse as u8);
+                    cur_obj.set(cx, "type", val_type)?
+                }
+            };
+        }
+        ClarityValue::Sequence(val) => {
+            match val {
+                SequenceData::Buffer(buff) => {
+                    let val_type = cx.number(ClarityTypePrefix::Buffer as u8);
+                    cur_obj.set(cx, "type", val_type)?;
+                    let obj_buffer = JsBuffer::external(cx, buff.data.to_vec());
+                    cur_obj.set(cx, "buffer", obj_buffer)?;
+                }
+                SequenceData::List(list) => {
+                    let val_type = cx.number(ClarityTypePrefix::List as u8);
+                    cur_obj.set(cx, "type", val_type)?;
+                    let list_obj = JsArray::new(cx, list.len());
+                    // list.type_signature
+                    for (i, x) in list.data.iter().enumerate() {
+                        let item_obj = cx.empty_object();
+                        decode_clarity_val(cx, &item_obj, x)?;
+                        list_obj.set(cx, i as u32, item_obj)?;
+                    }
+                    cur_obj.set(cx, "list", list_obj)?;
+                }
+                SequenceData::String(str) => match str {
+                    stacks::vm::types::CharType::ASCII(str_data) => {
+                        let val_type = cx.number(ClarityTypePrefix::StringASCII as u8);
+                        cur_obj.set(cx, "type", val_type)?;
+                        let data = cx.string(str_data.to_string());
+                        cur_obj.set(cx, "data", data)?;
+                    }
+                    stacks::vm::types::CharType::UTF8(str_data) => {
+                        let val_type = cx.number(ClarityTypePrefix::StringUTF8 as u8);
+                        cur_obj.set(cx, "type", val_type)?;
+                        let data = cx.string(str_data.to_string());
+                        cur_obj.set(cx, "data", data)?;
+                    }
+                },
+            }
+        }
+        ClarityValue::Principal(val) => match val {
+            PrincipalData::Standard(standard_principal) => {
+                let val_type = cx.number(ClarityTypePrefix::PrincipalStandard as u8);
+                cur_obj.set(cx, "type", val_type)?;
+                let address_string = cx.string(standard_principal.to_address().as_str());
+                cur_obj.set(cx, "address", address_string)?;
+            }
+            PrincipalData::Contract(contract_identifier) => {
+                let val_type = cx.number(ClarityTypePrefix::PrincipalContract as u8);
+                cur_obj.set(cx, "type", val_type)?;
+                let address_string = cx.string(contract_identifier.issuer.to_address().as_str());
+                cur_obj.set(cx, "address", address_string)?;
+                let contract_name = cx.string(contract_identifier.name.as_str());
+                cur_obj.set(cx, "contract_name", contract_name)?;
+            }
+        },
+        ClarityValue::Tuple(val) => {
+            let val_type = cx.number(ClarityTypePrefix::Tuple as u8);
+            cur_obj.set(cx, "type", val_type)?;
+            let tuple_obj = cx.empty_object();
+            for (key, value) in val.data_map.iter() {
+                let val_obj = cx.empty_object();
+                decode_clarity_val(cx, &val_obj, value)?;
+                tuple_obj.set(cx, key.as_str(), val_obj)?;
+            }
+        }
+        ClarityValue::Optional(val) => match &val.data {
+            Some(data) => {
+                let val_type = cx.number(ClarityTypePrefix::OptionalSome as u8);
+                cur_obj.set(cx, "type", val_type)?;
+                let option_obj = cx.empty_object();
+                decode_clarity_val(cx, &option_obj, &data)?;
+                cur_obj.set(cx, "value", option_obj)?;
+            }
+            None => {
+                let val_type = cx.number(ClarityTypePrefix::OptionalNone as u8);
+                cur_obj.set(cx, "type", val_type)?;
+            }
+        },
+        ClarityValue::Response(val) => {
+            if val.committed {
+                let val_type = cx.number(ClarityTypePrefix::ResponseOk as u8);
+                cur_obj.set(cx, "type", val_type)?;
+            } else {
+                let val_type = cx.number(ClarityTypePrefix::ResponseErr as u8);
+                cur_obj.set(cx, "type", val_type)?;
+            }
+            let response_obj = cx.empty_object();
+            decode_clarity_val(cx, &response_obj, &val.data)?;
+            cur_obj.set(cx, "value", response_obj)?;
+        }
+    };
+    Ok(())
+}
+
+fn decode_clarity_value_buffer_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let value_input_buffer = cx.argument::<JsBuffer>(0)?;
+    let clarity_value = cx
+        .borrow(&value_input_buffer, |data| {
+            ClarityValue::consensus_deserialize(&mut data.as_slice::<u8>())
+        })
+        .or_else(|e| cx.throw_error(format!("{}", e)))?;
+
+
+    let repr_str = cx.string(format!("{}", clarity_value));
+    let root_obj = cx.empty_object();
+    decode_clarity_val(&mut cx, &root_obj, &clarity_value)?;
+
+    let resp_obj = cx.empty_object();
+    resp_obj.set(&mut cx, "repr", repr_str)?;
+    resp_obj.set(&mut cx, "value", root_obj)?;
+
+    return Ok(resp_obj);
 }
 
 fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -623,7 +780,7 @@ impl NeonJsSerialize for PrincipalData {
     ) -> NeonResult<()> {
         match self {
             PrincipalData::Standard(standard_principal) => {
-                let type_int = 0x05; // TypePrefix::PrincipalStandard
+                let type_int = ClarityTypePrefix::PrincipalStandard as u8;
                 let type_id = cx.number(type_int);
                 obj.set(cx, "type_id", type_id)?;
 
@@ -631,7 +788,7 @@ impl NeonJsSerialize for PrincipalData {
                 obj.set(cx, "address", address)?;
             }
             PrincipalData::Contract(contract_identifier) => {
-                let type_int = 0x06; // TypePrefix::PrincipalContract
+                let type_int = ClarityTypePrefix::PrincipalContract as u8;
                 let type_id = cx.number(type_int);
                 obj.set(cx, "type_id", type_id)?;
 
@@ -764,6 +921,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function(
         "decodeClarityValueBufferToRepr",
         decode_clarity_value_buffer_to_repr,
+    )?;
+    cx.export_function(
+        "decodeClarityValueBufferToJson",
+        decode_clarity_value_buffer_to_json,
     )?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("inspectClarityValueArray", inspect_clarity_value_array)?;
