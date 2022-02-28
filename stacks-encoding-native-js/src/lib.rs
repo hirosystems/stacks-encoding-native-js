@@ -2,7 +2,7 @@ use clarity::vm::types::{
     signatures::TypeSignature as ClarityTypeSignature, Value as ClarityValue,
 };
 use hex::{FromHex, FromHexError};
-use neon::prelude::*;
+use neon::{prelude::*, types::buffer::TypedArray};
 use sha2::{Digest, Sha512_256};
 use stacks::{
     address::AddressHashMode,
@@ -59,6 +59,51 @@ enum ClarityTypePrefix {
     StringUTF8 = 14,
 }
 
+fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()> {
+    let console_global = cx
+        .global()
+        .get(cx, "console")?
+        .downcast_or_throw::<JsObject, _>(cx)?;
+    let log_fn = console_global
+        .get(cx, "log")?
+        .downcast_or_throw::<JsFunction, _>(cx)?;
+    log_fn
+        .call_with(cx)
+        .arg(cx.string(msg))
+        .apply::<JsValue, _>(cx)?;
+    Ok(())
+}
+
+fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult<()> {
+    let console_global = cx
+        .global()
+        .get(cx, "console")?
+        .downcast_or_throw::<JsObject, _>(cx)?;
+    let log_fn = console_global
+        .get(cx, "log")?
+        .downcast_or_throw::<JsFunction, _>(cx)?;
+    log_fn.call_with(cx).arg(msg).apply::<JsValue, _>(cx)?;
+    Ok(())
+}
+
+fn json_parse<'a, S: AsRef<str>>(
+    cx: &'a mut FunctionContext,
+    input: S,
+) -> NeonResult<Handle<'a, JsObject>> {
+    let json_global = cx
+        .global()
+        .get(cx, "JSON")?
+        .downcast_or_throw::<JsObject, _>(cx)?;
+    let json_parse = json_global
+        .get(cx, "parse")?
+        .downcast_or_throw::<JsFunction, _>(cx)?;
+    let result = json_parse
+        .call_with(cx)
+        .arg(cx.string(input))
+        .apply::<JsObject, _>(cx)?;
+    Ok(result)
+}
+
 fn decode_clarity_val(
     cx: &mut FunctionContext,
     cur_obj: &JsObject,
@@ -73,6 +118,7 @@ fn decode_clarity_val(
     if include_abi_type {
         let abi_type = ContractInterfaceAtomType::from_type_signature(&type_signature);
         // TODO: this is silly and slow, should deserialize the ContractInterfaceAtomType object directly into Neon JsObject
+
         let abi_json =
             serde_json::to_string(&abi_type).or_else(|e| cx.throw_error(format!("{}", e)))?;
         let abi_json_str = cx.string(abi_json);
@@ -83,8 +129,10 @@ fn decode_clarity_val(
         let json_parse = json_global
             .get(cx, "parse")?
             .downcast_or_throw::<JsFunction, _>(cx)?;
-        let null = cx.null();
-        let test_json_result = json_parse.call(cx, null, vec![abi_json_str])?;
+        let test_json_result = json_parse
+            .call_with(cx)
+            .arg(abi_json_str)
+            .apply::<JsValue, _>(cx)?;
         cur_obj.set(cx, "abi_type", test_json_result)?;
     }
 
@@ -205,19 +253,18 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value_buffer_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let value_input_buffer = cx.argument::<JsBuffer>(0)?;
-    let clarity_value = cx
-        .borrow(&value_input_buffer, |data| {
-            ClarityValue::consensus_deserialize(&mut data.as_slice::<u8>())
-        })
+    let mut value_input_buffer = cx.argument::<JsBuffer>(0)?;
+    let cursor = &mut &value_input_buffer.as_mut_slice(&mut cx)[..];
+    let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("{}", e)))?;
 
-    let mut include_abi_types = false;
     let include_abi_types_arg = cx.argument_opt(1);
-    if let Some(arg) = include_abi_types_arg {
-        let arg_bool = arg.downcast_or_throw::<JsBoolean, _>(&mut cx)?;
-        include_abi_types = arg_bool.value(&mut cx);
-    }
+    let include_abi_types = match include_abi_types_arg {
+        Some(arg) => arg
+            .downcast_or_throw::<JsBoolean, _>(&mut cx)?
+            .value(&mut cx),
+        None => false,
+    };
 
     let repr_str = cx.string(format!("{}", clarity_value));
     let root_obj = cx.empty_object();
@@ -231,13 +278,10 @@ fn decode_clarity_value_buffer_to_json(mut cx: FunctionContext) -> JsResult<JsOb
 }
 
 fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let value_input_buffer = cx.argument::<JsBuffer>(0)?;
-    let clarity_value = cx
-        .borrow(&value_input_buffer, |data| {
-            ClarityValue::consensus_deserialize(&mut data.as_slice::<u8>())
-        })
+    let mut value_input_buffer = cx.argument::<JsBuffer>(0)?;
+    let cursor = &mut &value_input_buffer.as_mut_slice(&mut cx)[..];
+    let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("{}", e)))?;
-
     Ok(cx.string(format!("{}", clarity_value)))
 }
 
@@ -923,9 +967,7 @@ impl NeonJsSerialize<(), Vec<u8>> for StacksMicroblockHeader {
 fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     let address_version = cx.argument::<JsNumber>(0)?.value(&mut cx);
     let address_bytes_arg = cx.argument::<JsBuffer>(1)?;
-    let address_hash160 = cx.borrow(&address_bytes_arg, |data| {
-        Hash160(data.as_slice::<u8>().try_into().unwrap())
-    });
+    let address_hash160 = Hash160(address_bytes_arg.as_slice(&cx).try_into().unwrap());
     let stacks_address = StacksAddress::new(address_version as u8, address_hash160);
     let stacks_address_string = cx.string(stacks_address.to_string());
     return Ok(stacks_address_string);

@@ -214,12 +214,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cslice"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "697c714f50560202b1f4e2e09cd50a421881c83e9025db75d15f276616f04f40"
-
-[[package]]
 name = "curve25519-dalek"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -557,11 +551,10 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "0.9.1"
+version = "0.10.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e85820b585bf3360bf158ac87a75764c48e361c91bbeb69873e6613cc78c023"
+checksum = "ea1f028ddf17d8f08c7a76c76487e7abfeb1bc23ab62f4a6a020d8510f3ac26d"
 dependencies = [
- "cslice",
  "neon-build",
  "neon-macros",
  "neon-runtime",
@@ -571,9 +564,9 @@ dependencies = [
 
 [[package]]
 name = "neon-build"
-version = "0.9.1"
+version = "0.10.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad9febc63f515156d4311a0c43899d3ace46352ecdd591c21b98ca3974f2a0d0"
+checksum = "fe0facb0f69acc991f265c81ed180d8981c7d204d81fecbabe27e77a3e562948"
 
 [[package]]
 name = "neon-macros"
@@ -587,9 +580,9 @@ dependencies = [
 
 [[package]]
 name = "neon-runtime"
-version = "0.9.1"
+version = "0.10.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02662cd2e62b131937bdef85d0918b05bc3c204daf4c64af62845403eccb60f3"
+checksum = "29173c7784a6fde8b105c1163031c8534ada586177effe16f3b84ad4ed4699c1"
 dependencies = [
  "cfg-if 1.0.0",
  "libloading",
