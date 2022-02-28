@@ -61,6 +61,8 @@ fn decode_clarity_val(
     cur_obj: &JsObject,
     val: &ClarityValue,
 ) -> NeonResult<()> {
+    let signature = cx.string(ClarityTypeSignature::type_of(&val).to_string());
+    cur_obj.set(cx, "signature", signature)?;
     match val {
         ClarityValue::Int(val) => {
             let val_type = cx.number(ClarityTypePrefix::Int as u8);
@@ -98,7 +100,6 @@ fn decode_clarity_val(
                     let val_type = cx.number(ClarityTypePrefix::List as u8);
                     cur_obj.set(cx, "type", val_type)?;
                     let list_obj = JsArray::new(cx, list.len());
-                    // list.type_signature
                     for (i, x) in list.data.iter().enumerate() {
                         let item_obj = cx.empty_object();
                         decode_clarity_val(cx, &item_obj, x)?;
@@ -147,6 +148,7 @@ fn decode_clarity_val(
                 decode_clarity_val(cx, &val_obj, value)?;
                 tuple_obj.set(cx, key.as_str(), val_obj)?;
             }
+            cur_obj.set(cx, "data", tuple_obj)?;
         }
         ClarityValue::Optional(val) => match &val.data {
             Some(data) => {
