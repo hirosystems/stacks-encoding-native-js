@@ -1051,6 +1051,7 @@ dependencies = [
  "clarity",
  "hex",
  "neon",
+ "serde_json",
  "sha2 0.10.2",
  "stacks-common",
 ]
