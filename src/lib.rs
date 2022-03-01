@@ -25,6 +25,14 @@ use stacks::{
 };
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
+use git_version::git_version;
+
+const GIT_VERSION: &str = git_version!(args = ["--all", "--long", "--always"]);
+
+fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
+    let version = cx.string(GIT_VERSION);
+    Ok(version)
+}
 
 fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
     if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
@@ -228,11 +236,25 @@ fn decode_clarity_val(
     Ok(())
 }
 
-fn decode_clarity_value_buffer_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let mut value_input_buffer: Handle<JsBuffer> = cx.argument(0)?;
-    let cursor = &mut &value_input_buffer.as_mut_slice(&mut cx)[..];
-    let clarity_value = ClarityValue::consensus_deserialize(cursor)
-        .or_else(|e| cx.throw_error(format!("{}", e)))?;
+fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let input_arg: Handle<JsValue> = cx.argument(0)?;
+
+    let clarity_value_result = if input_arg.is_a::<JsString, _>(&mut cx) {
+        let input_hex: Handle<JsString> = input_arg.downcast_or_throw(&mut cx)?;
+        let input_string = input_hex.value(&mut cx);
+        let val_bytes = decode_hex(input_string)
+            .or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        let cursor = &mut &val_bytes[..];
+        ClarityValue::consensus_deserialize(cursor)
+    } else if input_arg.is_a::<JsBuffer, _>(&mut cx) {
+        let mut input_buffer: Handle<JsBuffer> = input_arg.downcast_or_throw(&mut cx)?;
+        let cursor = &mut &input_buffer.as_mut_slice(&mut cx)[..];
+        ClarityValue::consensus_deserialize(cursor)
+    } else {
+        cx.throw_error(format!("Argument must be a hex string or a Buffer"))?
+    };
+
+    let clarity_value = clarity_value_result.or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
 
     let include_abi_types_arg = cx.argument_opt(1);
     let include_abi_types = match include_abi_types_arg {
@@ -471,9 +493,11 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
             cx.string(StacksAddress::new(stacks_address_version, self.signer).to_string());
         obj.set(cx, "signer_stacks_address", stacks_address)?;
 
+        // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());
         obj.set(cx, "nonce", nonce)?;
 
+        // TODO: bigint
         let tx_fee = cx.string(self.tx_fee.to_string());
         obj.set(cx, "tx_fee", tx_fee)?;
 
@@ -510,9 +534,11 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
             cx.string(StacksAddress::new(stacks_address_version, self.signer).to_string());
         obj.set(cx, "signer_stacks_address", stacks_address)?;
 
+        // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());
         obj.set(cx, "nonce", nonce)?;
 
+        // TODO: bigint
         let tx_fee = cx.string(self.tx_fee.to_string());
         obj.set(cx, "tx_fee", tx_fee)?;
 
@@ -591,6 +617,7 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 let condition_code = cx.number(*fungible_condition as u8);
                 obj.set(cx, "condition_code", condition_code)?;
 
+                // TODO: bigint
                 let amount_str = cx.string(amount.to_string());
                 obj.set(cx, "amount", amount_str)?;
             }
@@ -614,6 +641,7 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 let condition_code = cx.number(*fungible_condition as u8);
                 obj.set(cx, "condition_code", condition_code)?;
 
+                // TODO: bigint
                 let amount_str = cx.string(amount.to_string());
                 obj.set(cx, "amount", amount_str)?;
             }
@@ -707,6 +735,7 @@ impl NeonJsSerialize<(), Vec<u8>> for ClarityValue {
         obj: &Handle<JsObject>,
         _extra_ctx: &(),
     ) -> NeonResult<Vec<u8>> {
+        // TODO: use the nested clarity value deserializer fn
         let value_bytes = ClarityValue::serialize_to_vec(&self);
         let value_hex = cx.string(format!("0x{}", hex::encode(&value_bytes)));
         let value_type = cx.string(ClarityTypeSignature::type_of(self).to_string());
@@ -920,6 +949,7 @@ mod tests {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    cx.export_function("getVersion", get_version)?;
     cx.export_function(
         "decodeClarityValueHexToRepr",
         decode_clarity_value_hex_to_repr,
@@ -929,8 +959,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         decode_clarity_value_buffer_to_repr,
     )?;
     cx.export_function(
-        "decodeClarityValueBufferToJson",
-        decode_clarity_value_buffer_to_json,
+        "decodeClarityValueToJson",
+        decode_clarity_value_to_json,
     )?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("inspectClarityValueArray", inspect_clarity_value_array)?;
