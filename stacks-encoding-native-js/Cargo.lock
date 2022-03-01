@@ -552,6 +552,7 @@ dependencies = [
 [[package]]
 name = "neon"
 version = "0.9.1"
+source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 dependencies = [
  "neon-build",
  "neon-macros",
@@ -563,10 +564,12 @@ dependencies = [
 [[package]]
 name = "neon-build"
 version = "0.9.1"
+source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 
 [[package]]
 name = "neon-macros"
 version = "0.9.1"
+source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 dependencies = [
  "quote",
  "syn",
@@ -576,6 +579,7 @@ dependencies = [
 [[package]]
 name = "neon-runtime"
 version = "0.9.1"
+source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 dependencies = [
  "cfg-if 1.0.0",
  "libloading",
