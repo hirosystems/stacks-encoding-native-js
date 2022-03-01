@@ -26,10 +26,6 @@ use stacks::{
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("test3: hello nodejs from libclarity!"))
-}
-
 fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
     if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
         return decode_hex(&data.as_ref()[2..]);
@@ -60,13 +56,8 @@ enum ClarityTypePrefix {
 }
 
 fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()> {
-    let console_global = cx
-        .global()
-        .get(cx, "console")?
-        .downcast_or_throw::<JsObject, _>(cx)?;
-    let log_fn = console_global
-        .get(cx, "log")?
-        .downcast_or_throw::<JsFunction, _>(cx)?;
+    let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
+    let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
     log_fn
         .call_with(cx)
         .arg(cx.string(msg))
@@ -75,13 +66,8 @@ fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()
 }
 
 fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult<()> {
-    let console_global = cx
-        .global()
-        .get(cx, "console")?
-        .downcast_or_throw::<JsObject, _>(cx)?;
-    let log_fn = console_global
-        .get(cx, "log")?
-        .downcast_or_throw::<JsFunction, _>(cx)?;
+    let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
+    let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
     log_fn.call_with(cx).arg(msg).apply::<JsValue, _>(cx)?;
     Ok(())
 }
@@ -90,13 +76,8 @@ fn json_parse<'a, S: AsRef<str>>(
     cx: &'a mut FunctionContext,
     input: S,
 ) -> NeonResult<Handle<'a, JsObject>> {
-    let json_global = cx
-        .global()
-        .get(cx, "JSON")?
-        .downcast_or_throw::<JsObject, _>(cx)?;
-    let json_parse = json_global
-        .get(cx, "parse")?
-        .downcast_or_throw::<JsFunction, _>(cx)?;
+    let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
+    let json_parse: Handle<JsFunction> = json_global.get(cx, "parse")?;
     let result = json_parse
         .call_with(cx)
         .arg(cx.string(input))
@@ -122,18 +103,13 @@ fn decode_clarity_val(
         let abi_json =
             serde_json::to_string(&abi_type).or_else(|e| cx.throw_error(format!("{}", e)))?;
         let abi_json_str = cx.string(abi_json);
-        let json_global = cx
-            .global()
-            .get(cx, "JSON")?
-            .downcast_or_throw::<JsObject, _>(cx)?;
-        let json_parse = json_global
-            .get(cx, "parse")?
-            .downcast_or_throw::<JsFunction, _>(cx)?;
-        let test_json_result = json_parse
+        let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
+        let json_parse: Handle<JsFunction> = json_global.get(cx, "parse")?;
+        let abi_type_obj = json_parse
             .call_with(cx)
             .arg(abi_json_str)
             .apply::<JsValue, _>(cx)?;
-        cur_obj.set(cx, "abi_type", test_json_result)?;
+        cur_obj.set(cx, "abi_type", abi_type_obj)?;
     }
 
     // TODO: is there a perfect overlap between stacks.js clarity json and contract ABI schema?
@@ -253,7 +229,7 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value_buffer_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let mut value_input_buffer = cx.argument::<JsBuffer>(0)?;
+    let mut value_input_buffer: Handle<JsBuffer> = cx.argument(0)?;
     let cursor = &mut &value_input_buffer.as_mut_slice(&mut cx)[..];
     let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("{}", e)))?;
@@ -470,50 +446,6 @@ impl NeonJsSerialize<TxSerializationContext> for TransactionSpendingCondition {
         Ok(())
     }
 }
-
-/*
-pub struct MultisigSpendingCondition {
-    pub hash_mode: MultisigHashMode,
-    pub signer: Hash160,
-    pub nonce: u64,  // nth authorization from this account
-    pub tx_fee: u64, // microSTX/compute rate offered by this account
-    pub fields: Vec<TransactionAuthField>,
-    pub signatures_required: u16,
-}
-
-pub struct SinglesigSpendingCondition {
-    pub hash_mode: SinglesigHashMode,
-    pub signer: Hash160,
-    pub nonce: u64,  // nth authorization from this account
-    pub tx_fee: u64, // microSTX/compute rate offerred by this account
-    pub key_encoding: TransactionPublicKeyEncoding,
-    pub signature: MessageSignature,
-}
-*/
-
-/*
-trait SpendingConditionCommon {
-    fn get_hash_mode(&self) -> u8;
-    fn get_signer(&self) -> &Hash160;
-    fn get_nonce(&self) -> u64;
-    fn get_tx_fee(&self) -> u64;
-}
-
-impl SpendingConditionCommon for SinglesigSpendingCondition {
-    fn get_hash_mode(&self) -> u8 {
-        self.hash_mode.clone() as u8
-    }
-    fn get_signer(&self) -> &Hash160 {
-        &self.signer
-    }
-    fn get_nonce(&self) -> u64 {
-        self.nonce
-    }
-    fn get_tx_fee(&self) -> u64 {
-        self.tx_fee
-    }
-}
-*/
 
 impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
     fn neon_js_serialize(
@@ -988,7 +920,6 @@ mod tests {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("hello", hello)?;
     cx.export_function(
         "decodeClarityValueHexToRepr",
         decode_clarity_value_hex_to_repr,

@@ -25,6 +25,7 @@ sha2 = { version = "0.10", features = ["asm"] }
 sha2 = { version = "0.10" }
 
 [dependencies.neon]
-version = "0.10.0-alpha.3"
+# version = "0.10.0-alpha.3"
+path = "/Users/matt/Projects/neon"
 default-features = false
 features = ["napi-6"]
