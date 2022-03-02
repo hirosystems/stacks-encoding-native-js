@@ -8,6 +8,7 @@
     "build-debug": "npm run build --",
     "build-release": "npm run build -- --release",
     "install": "npm run build-release",
+    "prepare": "git pull --recurse-submodules",
     "test": "cargo test"
   },
   "author": "",
