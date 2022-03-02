@@ -80,8 +80,8 @@ fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult
     Ok(())
 }
 
-fn json_parse<'a, S: AsRef<str>>(
-    cx: &'a mut FunctionContext,
+fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
+    cx: &mut C,
     input: S,
 ) -> NeonResult<Handle<'a, JsObject>> {
     let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
@@ -110,13 +110,7 @@ fn decode_clarity_val(
 
         let abi_json =
             serde_json::to_string(&abi_type).or_else(|e| cx.throw_error(format!("{}", e)))?;
-        let abi_json_str = cx.string(abi_json);
-        let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
-        let json_parse: Handle<JsFunction> = json_global.get(cx, "parse")?;
-        let abi_type_obj = json_parse
-            .call_with(cx)
-            .arg(abi_json_str)
-            .apply::<JsValue, _>(cx)?;
+        let abi_type_obj = json_parse(cx, abi_json)?;
         cur_obj.set(cx, "abi_type", abi_type_obj)?;
     }
 
