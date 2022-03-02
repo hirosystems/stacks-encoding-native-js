@@ -27,7 +27,7 @@ use blockstack_lib::{
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
 
-const GIT_VERSION: &str = git_version!(args = ["--all", "--long", "--always"]);
+const GIT_VERSION: &str = git_version!(args = ["--all", "--long", "--always"], fallback = "unavailable");
 
 fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
     let version = cx.string(GIT_VERSION);
