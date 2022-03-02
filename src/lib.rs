@@ -1,6 +1,7 @@
 use clarity::vm::types::{
     signatures::TypeSignature as ClarityTypeSignature, Value as ClarityValue,
 };
+use git_version::git_version;
 use hex::{FromHex, FromHexError};
 use neon::{prelude::*, types::buffer::TypedArray};
 use sha2::{Digest, Sha512_256};
@@ -25,7 +26,6 @@ use stacks::{
 };
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
-use git_version::git_version;
 
 const GIT_VERSION: &str = git_version!(args = ["--all", "--long", "--always"]);
 
@@ -239,22 +239,19 @@ fn decode_clarity_val(
 fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
     let input_arg: Handle<JsValue> = cx.argument(0)?;
 
-    let clarity_value_result = if input_arg.is_a::<JsString, _>(&mut cx) {
-        let input_hex: Handle<JsString> = input_arg.downcast_or_throw(&mut cx)?;
-        let input_string = input_hex.value(&mut cx);
-        let val_bytes = decode_hex(input_string)
-            .or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+    let clarity_value = if let Ok(handle) = input_arg.downcast::<JsString, _>(&mut cx) {
+        let val_bytes = decode_hex(handle.value(&mut cx))
+            .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
         let cursor = &mut &val_bytes[..];
         ClarityValue::consensus_deserialize(cursor)
-    } else if input_arg.is_a::<JsBuffer, _>(&mut cx) {
-        let mut input_buffer: Handle<JsBuffer> = input_arg.downcast_or_throw(&mut cx)?;
-        let cursor = &mut &input_buffer.as_mut_slice(&mut cx)[..];
+            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
+    } else if let Ok(mut handle) = input_arg.downcast::<JsBuffer, _>(&mut cx) {
+        let cursor = &mut &handle.as_mut_slice(&mut cx)[..];
         ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
     } else {
-        cx.throw_error(format!("Argument must be a hex string or a Buffer"))?
-    };
-
-    let clarity_value = clarity_value_result.or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+        cx.throw_error("Argument must be a hex string or a Buffer")
+    }?;
 
     let include_abi_types_arg = cx.argument_opt(1);
     let include_abi_types = match include_abi_types_arg {
@@ -275,28 +272,40 @@ fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
     return Ok(resp_obj);
 }
 
-fn decode_clarity_value_buffer_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let mut value_input_buffer = cx.argument::<JsBuffer>(0)?;
-    let cursor = &mut &value_input_buffer.as_mut_slice(&mut cx)[..];
-    let clarity_value = ClarityValue::consensus_deserialize(cursor)
-        .or_else(|e| cx.throw_error(format!("{}", e)))?;
+fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
+    let input_arg: Handle<JsValue> = cx.argument(0)?;
+    let clarity_value = if let Ok(handle) = input_arg.downcast::<JsString, _>(&mut cx) {
+        let val_bytes = decode_hex(handle.value(&mut cx))
+            .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
+        let cursor = &mut &val_bytes[..];
+        ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
+    } else if let Ok(mut handle) = input_arg.downcast::<JsBuffer, _>(&mut cx) {
+        let cursor = &mut &handle.as_mut_slice(&mut cx)[..];
+        ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
+    } else {
+        cx.throw_error("Argument must be a hex string or a Buffer")
+    }?;
+
     Ok(cx.string(format!("{}", clarity_value)))
 }
 
-fn decode_clarity_value_hex_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
-    let val_bytes =
-        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
-    let byte_cursor = &mut &val_bytes[..];
-    let value = ClarityValue::consensus_deserialize(byte_cursor)
-        .or_else(|e| cx.throw_error(format!("{}", e)))?;
-    Ok(cx.string(format!("{}", value)))
-}
-
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
-    let input_hex = cx.argument::<JsString>(0)?.value(&mut cx);
-    let input_bytes =
-        decode_hex(input_hex).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
+    let input_arg: Handle<JsValue> = cx.argument(0)?;
+
+    let input_bytes = if let Ok(handle) = input_arg.downcast::<JsString, _>(&mut cx) {
+        let val_bytes = decode_hex(handle.value(&mut cx))
+            .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
+        Ok(val_bytes)
+    } else if let Ok(handle) = input_arg.downcast::<JsBuffer, _>(&mut cx) {
+        let cursor = handle.as_slice(&mut cx);
+        let bytes = cursor.to_vec();
+        Ok(bytes)
+    } else {
+        cx.throw_error("Argument must be a hex string or a Buffer")
+    }?;
+
     let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
 
@@ -325,25 +334,27 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     Ok(array_result)
 }
 
-fn inspect_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsString> {
-    let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
-    let val_bytes =
-        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
-    let array_len = u32::from_be_bytes(val_bytes[0..4].try_into().unwrap());
-    Ok(cx.string(array_len.to_string()))
-}
-
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let hex_string = cx.argument::<JsString>(0)?.value(&mut cx);
-    let val_bytes =
-        decode_hex(hex_string).or_else(|e| cx.throw_error(format!("Parsing error: {}", e)))?;
-    // let tx_id = Txid::from_stacks_tx(&val_bytes);
-    let byte_cursor = &mut &val_bytes[..];
+    let input_arg: Handle<JsValue> = cx.argument(0)?;
+
+    let input_bytes = if let Ok(handle) = input_arg.downcast::<JsString, _>(&mut cx) {
+        let val_bytes = decode_hex(handle.value(&mut cx))
+            .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
+        Ok(val_bytes)
+    } else if let Ok(handle) = input_arg.downcast::<JsBuffer, _>(&mut cx) {
+        let cursor = handle.as_slice(&mut cx);
+        let bytes = cursor.to_vec();
+        Ok(bytes)
+    } else {
+        cx.throw_error("Argument must be a hex string or a Buffer")
+    }?;
+
+    let byte_cursor = &mut &input_bytes[..];
     let tx = StacksTransaction::consensus_deserialize(byte_cursor)
         .or_else(|e| cx.throw_error(format!("Failed to decode transaction: {:?}\n", &e)))?;
     let tx_json_obj = cx.empty_object();
 
-    let tx_id_bytes = Sha512_256::digest(val_bytes);
+    let tx_id_bytes = Sha512_256::digest(input_bytes);
     let tx_id = cx.string(format!("0x{}", hex::encode(tx_id_bytes)));
     tx_json_obj.set(&mut cx, "tx_id", tx_id)?;
 
@@ -950,20 +961,9 @@ mod tests {
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("getVersion", get_version)?;
-    cx.export_function(
-        "decodeClarityValueHexToRepr",
-        decode_clarity_value_hex_to_repr,
-    )?;
-    cx.export_function(
-        "decodeClarityValueBufferToRepr",
-        decode_clarity_value_buffer_to_repr,
-    )?;
-    cx.export_function(
-        "decodeClarityValueToJson",
-        decode_clarity_value_to_json,
-    )?;
+    cx.export_function("decodeClarityValueToRepr", decode_clarity_value_to_repr)?;
+    cx.export_function("decodeClarityValueToJson", decode_clarity_value_to_json)?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
-    cx.export_function("inspectClarityValueArray", inspect_clarity_value_array)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("getStacksAddress", get_stacks_address)?;
     Ok(())
