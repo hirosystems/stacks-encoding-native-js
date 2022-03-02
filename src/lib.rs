@@ -5,7 +5,7 @@ use git_version::git_version;
 use hex::{FromHex, FromHexError};
 use neon::{prelude::*, types::buffer::TypedArray};
 use sha2::{Digest, Sha512_256};
-use stacks::{
+use blockstack_lib::{
     address::AddressHashMode,
     chainstate::stacks::{
         AssetInfo, AssetInfoID, PostConditionPrincipal, PostConditionPrincipalID,
@@ -21,7 +21,7 @@ use stacks::{
     util::hash::Hash160,
     vm::{
         analysis::contract_interface_builder::ContractInterfaceAtomType,
-        types::{PrincipalData, SequenceData},
+        types::{PrincipalData, SequenceData, CharType},
     },
 };
 use stacks_common::codec::StacksMessageCodec;
@@ -166,13 +166,13 @@ fn decode_clarity_val(
                 cur_obj.set(cx, "list", list_obj)?;
             }
             SequenceData::String(str) => match str {
-                stacks::vm::types::CharType::ASCII(str_data) => {
+                CharType::ASCII(str_data) => {
                     let type_id = cx.number(ClarityTypePrefix::StringASCII as u8);
                     cur_obj.set(cx, "type_id", type_id)?;
                     let data = cx.string(str_data.to_string());
                     cur_obj.set(cx, "data", data)?;
                 }
-                stacks::vm::types::CharType::UTF8(str_data) => {
+                CharType::UTF8(str_data) => {
                     let type_id = cx.number(ClarityTypePrefix::StringUTF8 as u8);
                     cur_obj.set(cx, "type_id", type_id)?;
                     let data = cx.string(str_data.to_string());
