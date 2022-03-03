@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "test desc 12345",
   "main": "index.node",
+  "types": "index.d.ts",
   "scripts": {
     "build": "npx --yes cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "build-debug": "npm run build --",
@@ -14,5 +15,8 @@
   "license": "ISC",
   "devDependencies": {
     "cargo-cp-artifact": "^0.1"
+  },
+  "dependencies": {
+    "@types/node": "^16.11.26"
   }
 }
