@@ -257,21 +257,10 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_arg: Handle<JsValue> = cx.argument(0)?;
-
-    let clarity_value = if let Ok(handle) = input_arg.downcast::<JsString, _>(&mut cx) {
-        let val_bytes = decode_hex(handle.value(&mut cx))
-            .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
-        let cursor = &mut &val_bytes[..];
-        ClarityValue::consensus_deserialize(cursor)
-            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
-    } else if let Ok(mut handle) = input_arg.downcast::<JsBuffer, _>(&mut cx) {
-        let cursor = &mut &handle.as_mut_slice(&mut cx)[..];
-        ClarityValue::consensus_deserialize(cursor)
-            .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))
-    } else {
-        cx.throw_error("Argument must be a hex string or a Buffer")
-    }?;
+    let val_bytes = first_arg_as_bytes(&mut cx)?;
+    let cursor = &mut &val_bytes[..];
+    let clarity_value = ClarityValue::consensus_deserialize(cursor)
+        .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
 
     let include_abi_types_arg = cx.argument_opt(1);
     let include_abi_types = match include_abi_types_arg {
