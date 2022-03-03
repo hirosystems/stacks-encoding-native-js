@@ -32,6 +32,18 @@ const GIT_VERSION: &str = git_version!(
     fallback = "unavailable"
 );
 
+/*
+pub fn eval<'a, 'b, C: Context<'a>>(
+    cx: &mut C,
+    script: Handle<'b, JsString>,
+) -> JsResult<'a, JsValue> {
+    let env = cx.env().to_raw();
+    build(cx.env(), |out| unsafe {
+        neon_runtime::string::run_script(out, env, script.to_raw())
+    })
+}
+*/
+
 fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
     let version = cx.string(GIT_VERSION);
     Ok(version)
