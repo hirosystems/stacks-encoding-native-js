@@ -86,13 +86,10 @@ fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult
 fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
     cx: &mut C,
     input: S,
-) -> NeonResult<Handle<'a, JsObject>> {
+) -> NeonResult<Handle<'a, JsValue>> {
     let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
     let json_parse: Handle<JsFunction> = json_global.get(cx, "parse")?;
-    let result = json_parse
-        .call_with(cx)
-        .arg(cx.string(input))
-        .apply::<JsObject, _>(cx)?;
+    let result: Handle<JsValue> = json_parse.call_with(cx).arg(cx.string(input)).apply(cx)?;
     Ok(result)
 }
 
@@ -125,7 +122,6 @@ fn decode_clarity_val(
     if include_abi_type {
         let abi_type = ContractInterfaceAtomType::from_type_signature(&type_signature);
         // TODO: this is silly and slow, should deserialize the ContractInterfaceAtomType object directly into Neon JsObject
-
         let abi_json =
             serde_json::to_string(&abi_type).or_else(|e| cx.throw_error(format!("{}", e)))?;
         let abi_type_obj = json_parse(cx, abi_json)?;
@@ -290,6 +286,43 @@ fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
     Ok(cx.string(format!("{}", clarity_value)))
+}
+
+fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    // first byte is post condition mode
+    let post_condition_mode = input_bytes[0];
+    let resp_obj = cx.empty_object();
+    match post_condition_mode {
+        1 => {
+            let mode = cx.string("allow");
+            resp_obj.set(&mut cx, "post_condition_mode", mode)?;
+        }
+        2 => {
+            let mode = cx.string("deny");
+            resp_obj.set(&mut cx, "post_condition_mode", mode)?;
+        }
+        _ => cx.throw_error(format!(
+            "PostConditionMode byte must be either 1 or 2 but was {}",
+            post_condition_mode
+        ))?,
+    };
+    // next 4 bytes are array length
+    let result_length = u32::from_be_bytes(input_bytes[1..5].try_into().unwrap());
+    let array_result = JsArray::new(&mut cx, result_length);
+    // next bytes are serialized post condition items
+    let cursor = &mut &input_bytes[5..];
+    let mut i: u32 = 0;
+    while !cursor.is_empty() {
+        let post_condition = TransactionPostCondition::consensus_deserialize(cursor)
+            .or_else(|e| cx.throw_error(format!("Error deserializing post condition: {}", e)))?;
+        let value_obj = cx.empty_object();
+        post_condition.neon_js_serialize(&mut cx, &value_obj, &())?;
+        array_result.set(&mut cx, i, value_obj)?;
+        i = i + 1;
+    }
+    resp_obj.set(&mut cx, "post_conditions", array_result)?;
+    Ok(resp_obj)
 }
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
@@ -939,6 +972,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeClarityValueToRepr", decode_clarity_value_to_repr)?;
     cx.export_function("decodeClarityValueToJson", decode_clarity_value_to_json)?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
+    cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("getStacksAddress", get_stacks_address)?;
     Ok(())
