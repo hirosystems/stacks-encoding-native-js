@@ -276,7 +276,7 @@ fn decode_clarity_val(
     Ok(())
 }
 
-fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
+fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
     let val_bytes = first_arg_as_bytes(&mut cx)?;
     let cursor = &mut &val_bytes[..];
     let clarity_value = ClarityValue::consensus_deserialize(cursor)
@@ -991,7 +991,7 @@ mod tests {
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("getVersion", get_version)?;
     cx.export_function("decodeClarityValueToRepr", decode_clarity_value_to_repr)?;
-    cx.export_function("decodeClarityValueToJson", decode_clarity_value_to_json)?;
+    cx.export_function("decodeClarityValue", decode_clarity_value)?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
