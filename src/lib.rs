@@ -56,6 +56,10 @@ fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
     FromHex::from_hex(data)
 }
 
+fn encode_hex<T: AsRef<[u8]>>(data: T) -> String {
+    format!("0x{}", hex::encode(data))
+}
+
 // Copied from non-public definition at
 // https://github.com/stacks-network/stacks-blockchain/blob/65570bbd8f6b2549e9b4d5bbe4c934538ec0cedc/clarity/src/vm/types/serialization.rs#L111
 #[repr(u8)]
@@ -124,12 +128,28 @@ fn decode_clarity_val(
     cx: &mut FunctionContext,
     cur_obj: &JsObject,
     val: &ClarityValue,
+    serialized_bytes: Option<&[u8]>,
     include_abi_type: bool,
 ) -> NeonResult<()> {
     let type_signature = ClarityTypeSignature::type_of(&val);
 
-    let signature_repr = cx.string(type_signature.to_string());
-    cur_obj.set(cx, "signature_repr", signature_repr)?;
+    let type_string = cx.string(type_signature.to_string());
+    cur_obj.set(cx, "type", type_string)?;
+
+    let repr_string = cx.string(val.to_string());
+    cur_obj.set(cx, "repr", repr_string)?;
+
+    match serialized_bytes {
+        Some(bytes) => {
+            let hex = cx.string(encode_hex(bytes));
+            cur_obj.set(cx, "hex", hex)?;
+        }
+        None => {
+            let bytes = ClarityValue::serialize_to_vec(&val);
+            let hex = cx.string(encode_hex(bytes));
+            cur_obj.set(cx, "hex", hex)?;
+        }
+    }
 
     if include_abi_type {
         let abi_type = ContractInterfaceAtomType::from_type_signature(&type_signature);
@@ -180,7 +200,7 @@ fn decode_clarity_val(
                 let list_obj = JsArray::new(cx, list.len());
                 for (i, x) in list.data.iter().enumerate() {
                     let item_obj = cx.empty_object();
-                    decode_clarity_val(cx, &item_obj, x, include_abi_type)?;
+                    decode_clarity_val(cx, &item_obj, x, None, include_abi_type)?;
                     list_obj.set(cx, i as u32, item_obj)?;
                 }
                 cur_obj.set(cx, "list", list_obj)?;
@@ -222,7 +242,7 @@ fn decode_clarity_val(
             let tuple_obj = cx.empty_object();
             for (key, value) in val.data_map.iter() {
                 let val_obj = cx.empty_object();
-                decode_clarity_val(cx, &val_obj, value, include_abi_type)?;
+                decode_clarity_val(cx, &val_obj, value, None, include_abi_type)?;
                 tuple_obj.set(cx, key.as_str(), val_obj)?;
             }
             cur_obj.set(cx, "data", tuple_obj)?;
@@ -232,7 +252,7 @@ fn decode_clarity_val(
                 let type_id = cx.number(ClarityTypePrefix::OptionalSome as u8);
                 cur_obj.set(cx, "type_id", type_id)?;
                 let option_obj = cx.empty_object();
-                decode_clarity_val(cx, &option_obj, &data, include_abi_type)?;
+                decode_clarity_val(cx, &option_obj, &data, None, include_abi_type)?;
                 cur_obj.set(cx, "value", option_obj)?;
             }
             None => {
@@ -249,7 +269,7 @@ fn decode_clarity_val(
                 cur_obj.set(cx, "type_id", type_id)?;
             }
             let response_obj = cx.empty_object();
-            decode_clarity_val(cx, &response_obj, &val.data, include_abi_type)?;
+            decode_clarity_val(cx, &response_obj, &val.data, None, include_abi_type)?;
             cur_obj.set(cx, "value", response_obj)?;
         }
     };
@@ -270,15 +290,16 @@ fn decode_clarity_value_to_json(mut cx: FunctionContext) -> JsResult<JsObject> {
         None => false,
     };
 
-    let repr_str = cx.string(format!("{}", clarity_value));
     let root_obj = cx.empty_object();
-    decode_clarity_val(&mut cx, &root_obj, &clarity_value, include_abi_types)?;
+    decode_clarity_val(
+        &mut cx,
+        &root_obj,
+        &clarity_value,
+        Some(&val_bytes),
+        include_abi_types,
+    )?;
 
-    let resp_obj = cx.empty_object();
-    resp_obj.set(&mut cx, "repr", repr_str)?;
-    resp_obj.set(&mut cx, "value", root_obj)?;
-
-    return Ok(resp_obj);
+    return Ok(root_obj);
 }
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -331,6 +352,14 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
 
+    let include_abi_types_arg = cx.argument_opt(1);
+    let include_abi_types = match include_abi_types_arg {
+        Some(arg) => arg
+            .downcast_or_throw::<JsBoolean, _>(&mut cx)?
+            .value(&mut cx),
+        None => false,
+    };
+
     let val_slice = &input_bytes[4..];
     let mut byte_cursor = std::io::Cursor::new(val_slice);
     let val_len = val_slice.len() as u64;
@@ -338,18 +367,17 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     while byte_cursor.position() < val_len - 1 {
         let cur_start = byte_cursor.position() as usize;
         let clarity_value = ClarityValue::consensus_deserialize(&mut byte_cursor)
-            .or_else(|e| cx.throw_error(format!("{}", e)))?;
+            .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
         let cur_end = byte_cursor.position() as usize;
         let value_slice = &val_slice[cur_start..cur_end];
-        let value_hex = cx.string(format!("0x{}", hex::encode(value_slice)));
-        let value_type = cx.string(ClarityTypeSignature::type_of(&clarity_value).to_string());
-        let value_repr = cx.string(clarity_value.to_string());
         let value_obj = cx.empty_object();
-        let value_buff = JsBuffer::external(&mut cx, value_slice.to_vec());
-        value_obj.set(&mut cx, "type", value_type)?;
-        value_obj.set(&mut cx, "repr", value_repr)?;
-        value_obj.set(&mut cx, "hex", value_hex)?;
-        value_obj.set(&mut cx, "buffer", value_buff)?;
+        decode_clarity_val(
+            &mut cx,
+            &value_obj,
+            &clarity_value,
+            Some(value_slice),
+            include_abi_types,
+        )?;
         array_result.set(&mut cx, i, value_obj)?;
         i = i + 1;
     }
@@ -364,7 +392,7 @@ fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
     let tx_json_obj = cx.empty_object();
 
     let tx_id_bytes = Sha512_256::digest(input_bytes);
-    let tx_id = cx.string(format!("0x{}", hex::encode(tx_id_bytes)));
+    let tx_id = cx.string(encode_hex(tx_id_bytes));
     tx_json_obj.set(&mut cx, "tx_id", tx_id)?;
 
     tx.neon_js_serialize(&mut cx, &tx_json_obj, &())?;
@@ -501,7 +529,7 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(format!("0x{}", hex::encode(&self.signer)));
+        let signer = cx.string(encode_hex(&self.signer));
         obj.set(cx, "signer", signer)?;
 
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
@@ -524,7 +552,7 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let key_encoding = cx.number(self.key_encoding as u8);
         obj.set(cx, "key_encoding", key_encoding)?;
 
-        let signature = cx.string(format!("0x{}", hex::encode(&self.signature)));
+        let signature = cx.string(encode_hex(&self.signature));
         obj.set(cx, "signature", signature)?;
 
         Ok(())
@@ -542,7 +570,7 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(format!("0x{}", hex::encode(&self.signer)));
+        let signer = cx.string(encode_hex(&self.signer));
         obj.set(cx, "signer", signer)?;
 
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
@@ -595,7 +623,7 @@ impl NeonJsSerialize for TransactionAuthField {
                 obj.set(cx, "type_id", type_id)?;
 
                 let pubkey_buf = StacksPublicKeyBuffer::from_public_key(pubkey);
-                let pubkey_hex = cx.string(format!("0x{}", hex::encode(pubkey_buf)));
+                let pubkey_hex = cx.string(encode_hex(pubkey_buf));
                 obj.set(cx, "public_key", pubkey_hex)?;
 
                 // TODO: add stacks-address encoded format
@@ -610,7 +638,7 @@ impl NeonJsSerialize for TransactionAuthField {
                 let type_id = cx.number(field_id as u8);
                 obj.set(cx, "type_id", type_id)?;
 
-                let pubkey_hex = cx.string(format!("0x{}", hex::encode(sig)));
+                let pubkey_hex = cx.string(encode_hex(sig));
                 obj.set(cx, "signature", pubkey_hex)?;
             }
         }
@@ -755,18 +783,10 @@ impl NeonJsSerialize<(), Vec<u8>> for ClarityValue {
         obj: &Handle<JsObject>,
         _extra_ctx: &(),
     ) -> NeonResult<Vec<u8>> {
-        // TODO: use the nested clarity value deserializer fn
-        let value_bytes = ClarityValue::serialize_to_vec(&self);
-        let value_hex = cx.string(format!("0x{}", hex::encode(&value_bytes)));
-        let value_type = cx.string(ClarityTypeSignature::type_of(self).to_string());
-        let value_repr = cx.string(self.to_string());
         // TODO: raw clarity value binary slice is already determined during deserialization, ideally
         // try to use that rather than re-serializing (slow)
-        let value_buff = JsBuffer::external(cx, value_bytes.to_vec());
-        obj.set(cx, "type", value_type)?;
-        obj.set(cx, "repr", value_repr)?;
-        obj.set(cx, "hex", value_hex)?;
-        obj.set(cx, "buffer", value_buff)?;
+        let value_bytes = ClarityValue::serialize_to_vec(&self);
+        decode_clarity_val(cx, obj, self, Some(&value_bytes), false)?;
         Ok(value_bytes)
     }
 }
@@ -790,7 +810,7 @@ impl NeonJsSerialize for TransactionPayload {
                 let amount_str = cx.string(amount.to_string());
                 obj.set(cx, "amount", amount_str)?;
 
-                let memo_hex = cx.string(format!("0x{}", hex::encode(memo)));
+                let memo_hex = cx.string(encode_hex(memo));
                 obj.set(cx, "memo", memo_hex)?;
             }
             TransactionPayload::ContractCall(ref contract_call) => {
