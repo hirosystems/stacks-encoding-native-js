@@ -14,7 +14,7 @@ use blockstack_lib::{
     util::hash::Hash160,
     vm::{
         analysis::contract_interface_builder::ContractInterfaceAtomType,
-        types::{CharType, PrincipalData, SequenceData},
+        types::{CharType, PrincipalData, SequenceData, StandardPrincipalData},
     },
 };
 use clarity::vm::types::{
@@ -126,7 +126,7 @@ fn first_arg_as_bytes<'a>(cx: &mut FunctionContext<'a>) -> NeonResult<Vec<u8>> {
 
 fn decode_clarity_val(
     cx: &mut FunctionContext,
-    cur_obj: &JsObject,
+    cur_obj: &Handle<JsObject>,
     val: &ClarityValue,
     serialized_bytes: Option<&[u8]>,
     include_abi_type: bool,
@@ -224,14 +224,17 @@ fn decode_clarity_val(
             PrincipalData::Standard(standard_principal) => {
                 let type_id = cx.number(ClarityTypePrefix::PrincipalStandard as u8);
                 cur_obj.set(cx, "type_id", type_id)?;
-                let address_string = cx.string(standard_principal.to_address().as_str());
-                cur_obj.set(cx, "address", address_string)?;
+
+                standard_principal.neon_js_serialize(cx, cur_obj, &())?;
             }
             PrincipalData::Contract(contract_identifier) => {
                 let type_id = cx.number(ClarityTypePrefix::PrincipalContract as u8);
                 cur_obj.set(cx, "type_id", type_id)?;
-                let address_string = cx.string(contract_identifier.issuer.to_address().as_str());
-                cur_obj.set(cx, "address", address_string)?;
+
+                contract_identifier
+                    .issuer
+                    .neon_js_serialize(cx, cur_obj, &())?;
+
                 let contract_name = cx.string(contract_identifier.name.as_str());
                 cur_obj.set(cx, "contract_name", contract_name)?;
             }
@@ -347,7 +350,7 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(resp_obj)
 }
 
-fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
+fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
     let input_bytes = first_arg_as_bytes(&mut cx)?;
     let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
@@ -381,7 +384,11 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
         array_result.set(&mut cx, i, value_obj)?;
         i = i + 1;
     }
-    Ok(array_result)
+    let resp_obj = cx.empty_object();
+    let buffer = JsBuffer::external(&mut cx, input_bytes);
+    resp_obj.set(&mut cx, "buffer", buffer)?;
+    resp_obj.set(&mut cx, "array", array_result)?;
+    Ok(resp_obj)
 }
 
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -537,9 +544,10 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
             TransactionVersion::Mainnet => stacks_address_hash_mode.to_version_mainnet(),
             TransactionVersion::Testnet => stacks_address_hash_mode.to_version_testnet(),
         };
-        let stacks_address =
-            cx.string(StacksAddress::new(stacks_address_version, self.signer).to_string());
-        obj.set(cx, "signer_stacks_address", stacks_address)?;
+        let stacks_address = StacksAddress::new(stacks_address_version, self.signer);
+        let stacks_address_obj = cx.empty_object();
+        stacks_address.neon_js_serialize(cx, &stacks_address_obj, &())?;
+        obj.set(cx, "signer_stacks_address", stacks_address_obj)?;
 
         // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());
@@ -728,7 +736,7 @@ impl NeonJsSerialize for PostConditionPrincipal {
         &self,
         cx: &mut FunctionContext,
         obj: &Handle<JsObject>,
-        _extra_ctx: &(),
+        extra_ctx: &(),
     ) -> NeonResult<()> {
         match *self {
             PostConditionPrincipal::Origin => {
@@ -739,15 +747,13 @@ impl NeonJsSerialize for PostConditionPrincipal {
                 let type_id = cx.number(PostConditionPrincipalID::Standard as u8);
                 obj.set(cx, "type_id", type_id)?;
 
-                let address_str = cx.string(address.to_string());
-                obj.set(cx, "address", address_str)?;
+                address.neon_js_serialize(cx, obj, extra_ctx)?;
             }
             PostConditionPrincipal::Contract(ref address, ref contract_name) => {
                 let type_id = cx.number(PostConditionPrincipalID::Contract as u8);
                 obj.set(cx, "type_id", type_id)?;
 
-                let address_str = cx.string(address.to_string());
-                obj.set(cx, "address", address_str)?;
+                address.neon_js_serialize(cx, obj, extra_ctx)?;
 
                 let contract_str = cx.string(contract_name.to_string());
                 obj.set(cx, "contract_name", contract_str)?;
@@ -854,29 +860,64 @@ impl NeonJsSerialize for PrincipalData {
         &self,
         cx: &mut FunctionContext,
         obj: &Handle<JsObject>,
-        _extra_ctx: &(),
+        extra_ctx: &(),
     ) -> NeonResult<()> {
         match self {
             PrincipalData::Standard(standard_principal) => {
                 let type_int = ClarityTypePrefix::PrincipalStandard as u8;
                 let type_id = cx.number(type_int);
                 obj.set(cx, "type_id", type_id)?;
-
-                let address = cx.string(standard_principal.to_address());
-                obj.set(cx, "address", address)?;
+                standard_principal.neon_js_serialize(cx, obj, extra_ctx)?;
             }
             PrincipalData::Contract(contract_identifier) => {
                 let type_int = ClarityTypePrefix::PrincipalContract as u8;
                 let type_id = cx.number(type_int);
                 obj.set(cx, "type_id", type_id)?;
-
-                let address = cx.string(contract_identifier.issuer.to_address());
-                obj.set(cx, "address", address)?;
-
-                let contract_name = cx.string(contract_identifier.name.to_string());
-                obj.set(cx, "contract_name", contract_name)?;
+                contract_identifier
+                    .issuer
+                    .neon_js_serialize(cx, obj, extra_ctx)?;
             }
         };
+        Ok(())
+    }
+}
+
+impl NeonJsSerialize for StacksAddress {
+    fn neon_js_serialize(
+        &self,
+        cx: &mut FunctionContext,
+        obj: &Handle<JsObject>,
+        _extra_ctx: &(),
+    ) -> NeonResult<()> {
+        let address_version = cx.number(self.version);
+        obj.set(cx, "address_version", address_version)?;
+
+        let address_hash_bytes = JsBuffer::external(cx, self.bytes.into_bytes());
+        obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
+
+        let address = cx.string(self.to_string());
+        obj.set(cx, "address", address)?;
+
+        Ok(())
+    }
+}
+
+impl NeonJsSerialize for StandardPrincipalData {
+    fn neon_js_serialize(
+        &self,
+        cx: &mut FunctionContext,
+        obj: &Handle<JsObject>,
+        _extra_ctx: &(),
+    ) -> NeonResult<()> {
+        let address_version = cx.number(self.0);
+        obj.set(cx, "address_version", address_version)?;
+
+        let address_hash_bytes = JsBuffer::external(cx, self.1);
+        obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
+
+        let address = cx.string(self.to_address());
+        obj.set(cx, "address", address)?;
+
         Ok(())
     }
 }
@@ -888,8 +929,7 @@ impl NeonJsSerialize for TransactionContractCall {
         obj: &Handle<JsObject>,
         extra_ctx: &(),
     ) -> NeonResult<()> {
-        let address = cx.string(self.address.to_string());
-        obj.set(cx, "address", address)?;
+        self.address.neon_js_serialize(cx, obj, extra_ctx)?;
 
         let contract_name = cx.string(self.contract_name.to_string());
         obj.set(cx, "contract_name", contract_name)?;
