@@ -1,8 +1,9 @@
 use blockstack_lib::{
     address::AddressHashMode,
     chainstate::stacks::{
-        AssetInfo, AssetInfoID, PostConditionPrincipal, PostConditionPrincipalID,
-        StacksMicroblockHeader, TransactionContractCall, TransactionPayload, TransactionPayloadID,
+        AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
+        PostConditionPrincipal, PostConditionPrincipalID, StacksMicroblockHeader,
+        TransactionContractCall, TransactionPayload, TransactionPayloadID,
         TransactionPostCondition, TransactionSmartContract,
     },
     chainstate::stacks::{
@@ -670,8 +671,7 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 principal.neon_js_serialize(cx, &pricipal_obj, extra_ctx)?;
                 obj.set(cx, "principal", pricipal_obj)?;
 
-                let condition_code = cx.number(*fungible_condition as u8);
-                obj.set(cx, "condition_code", condition_code)?;
+                fungible_condition.neon_js_serialize(cx, obj, extra_ctx)?;
 
                 // TODO: bigint
                 let amount_str = cx.string(amount.to_string());
@@ -694,8 +694,7 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 asset_info.neon_js_serialize(cx, &asset_info_obj, extra_ctx)?;
                 obj.set(cx, "asset", asset_info_obj)?;
 
-                let condition_code = cx.number(*fungible_condition as u8);
-                obj.set(cx, "condition_code", condition_code)?;
+                fungible_condition.neon_js_serialize(cx, obj, extra_ctx)?;
 
                 // TODO: bigint
                 let amount_str = cx.string(amount.to_string());
@@ -722,12 +721,52 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 asset_value.neon_js_serialize(cx, &asset_value_obj, extra_ctx)?;
                 obj.set(cx, "asset_value", asset_value_obj)?;
 
-                let condition_code = cx.number(*nonfungible_condition as u8);
-                obj.set(cx, "condition_code", condition_code)?;
+                nonfungible_condition.neon_js_serialize(cx, obj, extra_ctx)?;
             }
         };
         let value_bytes = TransactionPostCondition::serialize_to_vec(&self);
         Ok(value_bytes)
+    }
+}
+
+impl NeonJsSerialize for FungibleConditionCode {
+    fn neon_js_serialize(
+        &self,
+        cx: &mut FunctionContext,
+        obj: &Handle<JsObject>,
+        _extra_ctx: &(),
+    ) -> NeonResult<()> {
+        let condition_name = match *self {
+            FungibleConditionCode::SentEq => "sent_equal_to",
+            FungibleConditionCode::SentGt => "sent_greater_than",
+            FungibleConditionCode::SentGe => "sent_greater_than_or_equal_to",
+            FungibleConditionCode::SentLt => "sent_less_than",
+            FungibleConditionCode::SentLe => "sent_less_than_or_equal_to",
+        };
+        let condition_code = cx.number(*self as u8);
+        obj.set(cx, "condition_code", condition_code)?;
+        let condition_name_str = cx.string(condition_name);
+        obj.set(cx, "condition", condition_name_str)?;
+        Ok(())
+    }
+}
+
+impl NeonJsSerialize for NonfungibleConditionCode {
+    fn neon_js_serialize(
+        &self,
+        cx: &mut FunctionContext,
+        obj: &Handle<JsObject>,
+        _extra_ctx: &(),
+    ) -> NeonResult<()> {
+        let condition_name = match *self {
+            NonfungibleConditionCode::Sent => "sent",
+            NonfungibleConditionCode::NotSent => "not_sent",
+        };
+        let condition_code = cx.number(*self as u8);
+        obj.set(cx, "condition_code", condition_code)?;
+        let condition_name_str = cx.string(condition_name);
+        obj.set(cx, "condition", condition_name_str)?;
+        Ok(())
     }
 }
 
