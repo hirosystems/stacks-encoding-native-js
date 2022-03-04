@@ -192,4 +192,4 @@ export type ParsedClarityValueOptionalBool = ParsedClarityValueOptional<ParsedCl
 /**
  * Type for commonly used `(optional uint)`
  */
-export type ParsedClarityValueOptionalUIint = ParsedClarityValueOptional<ParsedClarityValueUInt>;
+export type ParsedClarityValueOptionalUInt = ParsedClarityValueOptional<ParsedClarityValueUInt>;
