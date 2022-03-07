@@ -217,8 +217,7 @@ fn decode_clarity_val(
                     let type_id = cx.number(ClarityTypePrefix::StringUTF8 as u8);
                     cur_obj.set(cx, "type_id", type_id)?;
 
-                    let utf8_bytes: Vec<u8> =
-                        str_data.data.iter().map(|v| v.clone()).flatten().collect();
+                    let utf8_bytes: Vec<u8> = str_data.data.iter().cloned().flatten().collect();
                     let utf8_str = String::from_utf8_lossy(&utf8_bytes);
                     let data = cx.string(utf8_str);
                     cur_obj.set(cx, "data", data)?;
