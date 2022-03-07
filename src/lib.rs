@@ -915,6 +915,10 @@ impl NeonJsSerialize for PrincipalData {
                 let type_int = ClarityTypePrefix::PrincipalContract as u8;
                 let type_id = cx.number(type_int);
                 obj.set(cx, "type_id", type_id)?;
+
+                let contract_name = cx.string(contract_identifier.name.as_str());
+                obj.set(cx, "contract_name", contract_name)?;
+
                 contract_identifier
                     .issuer
                     .neon_js_serialize(cx, obj, extra_ctx)?;

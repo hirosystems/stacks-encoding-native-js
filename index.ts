@@ -10,6 +10,174 @@ export interface DecodedClarityValueListResult {
     array: ParsedClarityValue[];
 }
 
+export interface DecodedTxResult {
+    /** Hex encoded string of the serialized transaction */
+    tx_id: string;
+    version: TransactionVersion;
+    chain_id: number;
+    auth: TxAuthStandard | DecodedTxAuthSponsored;
+    anchor_mode: AnchorModeID;
+    post_condition_mode: PostConditionModeID;
+    post_conditions: any[]; // TODO
+    post_conditions_buffer: Buffer;
+    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase;
+}
+
+export interface TxPayloadTokenTransfer {
+    type_id: TxPayloadTypeID.TokenTransfer;
+    recipient: PrincipalStandardData | PrincipalContractData;
+    amount: string;
+    /** Hex encoded string of the 34-bytes */
+    memo: string;
+}
+
+export enum PrincipalTypeID {
+    PrincipalStandard = 5,
+    PrincipalContract = 6,
+}
+
+export interface PrincipalStandardData {
+    type_id: PrincipalTypeID.PrincipalStandard;
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
+}
+
+export interface PrincipalContractData {
+    type_id: PrincipalTypeID.PrincipalContract;
+    contract_name: string;
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
+}
+
+export interface TxPayloadSmartContract { 
+    type_id: TxPayloadTypeID.SmartContract;
+    contract_name: string;
+    code_body: string;
+}
+
+export interface TxPayloadContractCall {
+    type_id: TxPayloadTypeID.ContractCall;
+    contract_name: string;
+    function_name: string;
+    function_args: ParsedClarityValue[];
+    function_args_buffer: Buffer;
+}
+
+export interface TxPayloadPoisonMicroblock {
+    type_id: TxPayloadTypeID.PoisonMicroblock;
+    microblock_header_1: TxMicroblockHeader;
+    microblock_header_2: TxMicroblockHeader;
+}
+
+export interface TxPayloadCoinbase {
+    type_id: TxPayloadTypeID.Coinbase;
+    payload_buffer: Buffer;
+}
+
+export enum TxPayloadTypeID {
+    TokenTransfer = 0,
+    SmartContract = 1,
+    ContractCall = 2,
+    PoisonMicroblock = 3,
+    Coinbase = 4,
+}
+
+export enum TxPostConditionAuthFlag {
+    AuthStandard = 0x04,
+    AuthSponsored = 0x05,
+}
+
+export interface TxAuthStandard {
+    type_id: TxPostConditionAuthFlag;
+    origin_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
+}
+
+export interface DecodedTxAuthSponsored {
+    type_id: TxPostConditionAuthFlag;
+    origin_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
+    sponsor_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
+}
+
+export enum TxSpendingConditionSingleSigHashMode {
+    /** hash160(public-key), same as bitcoin's p2pkh */
+    P2PKH = 0x00,
+    /** hash160(segwit-program-00(p2pkh)), same as bitcoin's p2sh-p2wpkh */
+    P2WPKH = 0x02,
+}
+
+export enum TxSpendingConditionMultiSigHashMode {
+    /** hash160(multisig-redeem-script), same as bitcoin's multisig p2sh */
+    P2SH = 0x01,
+    /** hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh */
+    P2WSH = 0x03,
+}
+
+export interface DecodedTxSpendingConditionSingleSig {
+    hash_mode: TxSpendingConditionSingleSigHashMode;
+    /** Hex-encoded string of the hash160 signer address. */
+    signer: string;
+    signer_stacks_address: DecodedStacksAddress;
+    nonce: string;
+    tx_fee: string;
+    /** A 1-byte public key encoding field to indicate whether or not the public key should be compressed before hashing. */
+    key_encoding: TxPublicKeyEncoding;
+    signature: string;
+}
+
+export interface DecodedTxSpendingConditionMultiSig {
+    hash_mode: TxSpendingConditionMultiSigHashMode;
+    /** Hex-encoded string of the hash160 signer address. */
+    signer: string;
+    signer_stacks_address: DecodedStacksAddress;
+    nonce: string;
+    tx_fee: string;
+    fields: any[]; // TODO
+    signatures_required: number,
+}
+
+export interface TxMicroblockHeader {
+    buffer: Buffer;
+    version: number;
+    sequence: number;
+    prev_block: Buffer;
+    tx_merkle_root: Buffer;
+    signature: Buffer;
+}
+
+export enum TxPublicKeyEncoding {
+    Compressed = 0x00,
+    Uncompressed = 0x01,
+}
+
+export interface DecodedStacksAddress {
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
+}
+
+export enum TransactionVersion {
+    Mainnet = 0x00,
+    Testnet = 0x80,
+}
+
+export enum AnchorModeID {
+    /** The transaction MUST be included in an anchored block. */
+    OnChainOnly = 1,
+    /** The transaction MUST be included in a microblock. */
+    OffChainOnly = 2,
+    /** The leader can choose where to include the transaction. */
+    Any = 3,
+}
+
+export enum PostConditionModeID {
+    /** This transaction may affect other assets not listed in the post-conditions. */
+    Allow = 0x01,
+    /** This transaction may NOT affect other assets besides those listed in the post-conditions. */
+    Deny = 0x02,
+}
+
 export enum ClarityTypeID {
     Int = 0,
     UInt = 1,
