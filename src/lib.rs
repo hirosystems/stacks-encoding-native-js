@@ -210,13 +210,17 @@ fn decode_clarity_val(
                 CharType::ASCII(str_data) => {
                     let type_id = cx.number(ClarityTypePrefix::StringASCII as u8);
                     cur_obj.set(cx, "type_id", type_id)?;
-                    let data = cx.string(str_data.to_string());
+                    let data = cx.string(String::from_utf8_lossy(&str_data.data));
                     cur_obj.set(cx, "data", data)?;
                 }
                 CharType::UTF8(str_data) => {
                     let type_id = cx.number(ClarityTypePrefix::StringUTF8 as u8);
                     cur_obj.set(cx, "type_id", type_id)?;
-                    let data = cx.string(str_data.to_string());
+
+                    let utf8_bytes: Vec<u8> =
+                        str_data.data.iter().map(|v| v.clone()).flatten().collect();
+                    let utf8_str = String::from_utf8_lossy(&utf8_bytes);
+                    let data = cx.string(utf8_str);
                     cur_obj.set(cx, "data", data)?;
                 }
             },
