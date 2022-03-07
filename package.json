@@ -2,19 +2,20 @@
   "name": "stacks-encoding-native-js",
   "version": "0.1.0",
   "description": "test desc 12345",
-  "main": "index.node",
-  "types": "index.d.ts",
+  "main": "lib/index.js",
   "scripts": {
-    "build": "npx --yes cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "build": "npm run build-ts && npx --yes cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "build-debug": "npm run build --",
     "build-release": "npm run build -- --release",
     "install": "npm run build-release",
-    "test": "cargo test"
+    "test": "cargo test",
+    "build-ts": "tsc"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "cargo-cp-artifact": "^0.1"
+    "cargo-cp-artifact": "^0.1",
+    "typescript": "^4.6.2"
   },
   "dependencies": {
     "@types/node": "^16.11.26"

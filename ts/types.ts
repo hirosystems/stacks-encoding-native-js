@@ -1,23 +1,9 @@
-export function getVersion(): string;
-
-export function decodeTransaction(arg: string | Buffer): any;
-
-export function decodeClarityValueToRepr(arg: string | Buffer): any;
-
-export function decodeClarityValue(arg: string | Buffer, includeAbi?: boolean): ParsedClarityValue;
-
 export interface DecodedClarityValueListResult {
     /** Byte span for the given serialized Clarity value list (u32be length-prefixed) */
     buffer: Buffer;
     /** Deserialized Clarity values */
     array: ParsedClarityValue[];
 }
-
-export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean): DecodedClarityValueListResult;
-
-export function decodePostConditions(arg: string | Buffer): any;
-
-export function getStacksAddress(version: number, hash160: Buffer): string;
 
 export enum ClarityTypeID {
     Int = 0,
