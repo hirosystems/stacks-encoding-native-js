@@ -749,7 +749,7 @@ impl NeonJsSerialize for FungibleConditionCode {
         let condition_code = cx.number(*self as u8);
         obj.set(cx, "condition_code", condition_code)?;
         let condition_name_str = cx.string(condition_name);
-        obj.set(cx, "condition", condition_name_str)?;
+        obj.set(cx, "condition_name", condition_name_str)?;
         Ok(())
     }
 }
@@ -768,7 +768,7 @@ impl NeonJsSerialize for NonfungibleConditionCode {
         let condition_code = cx.number(*self as u8);
         obj.set(cx, "condition_code", condition_code)?;
         let condition_name_str = cx.string(condition_name);
-        obj.set(cx, "condition", condition_name_str)?;
+        obj.set(cx, "condition_name", condition_name_str)?;
         Ok(())
     }
 }

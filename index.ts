@@ -18,9 +18,101 @@ export interface DecodedTxResult {
     auth: TxAuthStandard | DecodedTxAuthSponsored;
     anchor_mode: AnchorModeID;
     post_condition_mode: PostConditionModeID;
-    post_conditions: any[]; // TODO
+    post_conditions: (TxPostConditionStx | TxPostConditionFungible | TxPostConditionNonfungible)[];
     post_conditions_buffer: Buffer;
     payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase;
+}
+
+export enum TxPostConditionAssetInfoID {
+    STX = 0,
+    FungibleAsset = 1,
+    NonfungibleAsset = 2,
+}
+
+export interface TxPostConditionStx {
+    asset_info_id: TxPostConditionAssetInfoID.STX;
+    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
+    condition_code: TxPostConditionFungibleConditionCodeID;
+    condition_name: TxPostConditionFungibleConditionCodeName;
+    amount: string;
+}
+
+export interface TxPostConditionFungible {
+    asset_info_id: TxPostConditionAssetInfoID.FungibleAsset;
+    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
+    asset: TxPostConditionAssetInfo;
+    condition_code: TxPostConditionFungibleConditionCodeID;
+    condition_name: TxPostConditionFungibleConditionCodeName;
+    amount: string;
+}
+
+export interface TxPostConditionNonfungible {
+    asset_info_id: TxPostConditionAssetInfoID.NonfungibleAsset;
+    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
+    asset: TxPostConditionAssetInfo;
+    asset_value: ParsedClarityValue;
+    condition_code: TxPostConditionNonfungibleConditionCodeID;
+    condition_name: TxPostConditionNonFungibleConditionName;
+}
+
+export interface TxPostConditionAssetInfo {
+    contract_address: string;
+    contract_name: string;
+    asset_name: string;
+}
+
+export enum TxPostConditionNonfungibleConditionCodeID {
+    Sent = 0x10,
+    NotSent = 0x11,
+}
+
+export enum TxPostConditionNonFungibleConditionName {
+    Sent = "sent",
+    NotSent = "not_sent",
+}
+
+export enum TxPostConditionFungibleConditionCodeID {
+    SentEq = 0x01,
+    SentGt = 0x02,
+    SentGe = 0x03,
+    SentLt = 0x04,
+    SentLe = 0x05,
+}
+
+export enum TxPostConditionFungibleConditionCodeName {
+    SentEq = "sent_equal_to",
+    SentGt = "sent_greater_than",
+    SentGe = "sent_greater_than_or_equal_to",
+    SentLt = "sent_less_than",
+    SentLe = "sent_less_than_or_equal_to",
+}
+
+export enum TxPostConditionPrincipalTypeID {
+    /** A STX post-condition, which pertains to the origin account's STX. */
+    Origin = 0x01,
+    /** A Fungible token post-condition, which pertains to one of the origin account's fungible tokens. */
+    Standard = 0x02,
+    /** A Non-fungible token post-condition, which pertains to one of the origin account's non-fungible tokens. */
+    Contract = 0x03,
+}
+
+export interface TxPostConditionPrincipalOrigin {
+    type_id: TxPostConditionPrincipalTypeID.Origin
+}
+
+export interface TxPostConditionPrincipalStandard {
+    type_id: TxPostConditionPrincipalTypeID.Standard;
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
+}
+
+export interface TxPostConditionPrincipalContract {
+    type_id: TxPostConditionPrincipalTypeID.Contract;
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
+    contract_name: string;
 }
 
 export interface TxPayloadTokenTransfer {
