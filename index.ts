@@ -1,3 +1,8 @@
+import * as bindings from './index.node';
+export * from './index.node';
+export const StacksNativeEncodingBindings = bindings;
+export default StacksNativeEncodingBindings;
+
 export interface DecodedClarityValueListResult {
     /** Byte span for the given serialized Clarity value list (u32be length-prefixed) */
     buffer: Buffer;

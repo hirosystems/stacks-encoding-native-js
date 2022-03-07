@@ -2,7 +2,7 @@
   "name": "stacks-encoding-native-js",
   "version": "0.1.0",
   "description": "test desc 12345",
-  "main": "lib/index.js",
+  "main": "index.js",
   "scripts": {
     "build": "npm run build-ts && npx --yes cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "build-debug": "npm run build --",
