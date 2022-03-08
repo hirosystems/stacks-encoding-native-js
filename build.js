@@ -42,9 +42,15 @@ const outputFilePath = path.join('native', outputFileName);
 if (fs.existsSync(outputFilePath)) {
   fs.unlinkSync(outputFilePath);
 }
+
 let runArgs = [
   '-nc', outputFilePath, '--',
   'cargo', 'build', '--message-format=json-render-diagnostics', '--release',
   '--target', cargoTarget
 ];
+
+console.log(`Building target: ${cargoTarget}`);
+console.log(`Building artifact: ${outputFilePath}`);
+console.log(`Build command: ${runArgs.join(' ')}`);
+
 cargoCpArtifact(runArgs, process.env);

@@ -22,6 +22,7 @@ jobs:
           name: linux-x64-musl
           path: native/linux-x64-musl.node
           if-no-files-found: error
+
   build_linux-x64-glibc:
     runs-on: ubuntu-latest
     steps:
@@ -38,9 +39,39 @@ jobs:
         run: npm run build
       - uses: actions/upload-artifact@v2
         with:
-          name: linux-x64-musl
+          name: linux-x64-glibc
           path: native/linux-x64-glibc.node
           if-no-files-found: error
+
+  build_linux-arm64-glibc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: aarch64-unknown-linux-gnu
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Install cross compile deps
+        run: |
+          apt-get update && apt-get install -y gcc-aarch64-linux-gnu
+      - name: Configure linux-arm64 cross compile
+        run: |
+          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
+      - name: npm i
+        run: npm i
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm64-glibc
+          path: native/linux-arm64-glibc.node
+          if-no-files-found: error
+
   build_win-x64:
     runs-on: windows-2022
     steps:
@@ -60,6 +91,7 @@ jobs:
           name: win32-x64
           path: native/win32-x64.node
           if-no-files-found: error
+
   build_darwin-x64:
     runs-on: macos-latest
     steps:
@@ -79,6 +111,7 @@ jobs:
           name: darwin-x64
           path: native/darwin-x64.node
           if-no-files-found: error
+
   build_darwin-arm64:
     runs-on: macos-latest
     steps:
@@ -94,6 +127,7 @@ jobs:
         run: |
           echo "SDKROOT=$(xcrun -sdk macosx --show-sdk-path)" >> $GITHUB_ENV
           echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version)" >> $GITHUB_ENV
+          echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
