@@ -4,12 +4,10 @@
   "description": "test desc 12345",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build-ts && npx --yes cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-    "build-debug": "npm run build --",
-    "build-release": "npm run build -- --release",
-    "install": "npm run build-release",
-    "test": "cargo test",
-    "build-ts": "tsc"
+    "build-cargo": "node build.js",
+    "build-ts": "tsc",
+    "build": "npm run build-ts && npm run build-cargo",
+    "test": "cargo test"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +16,7 @@
     "typescript": "^4.6.2"
   },
   "dependencies": {
-    "@types/node": "^16.11.26"
+    "@types/node": "^16.11.26",
+    "detect-libc": "^2.0.1"
   }
 }

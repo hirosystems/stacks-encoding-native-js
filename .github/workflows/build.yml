@@ -1,0 +1,88 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build_linux-x64-musl:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:alpine
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install deps
+        run: apk add alpine-sdk git nodejs npm
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-x64-musl
+          path: native/linux-x64-musl.node
+          if-no-files-found: error
+  build_linux-x64-glibc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-x64-musl
+          path: native/linux-x64-glibc.node
+          if-no-files-found: error
+  build_win-x64:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: win32-x64
+          path: native/win32-x64.node
+          if-no-files-found: error
+  build_darwin-x64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: darwin-x64
+          path: native/darwin-x64.node
+          if-no-files-found: error
+  build_darwin-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          target: aarch64-apple-darwin
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Configure macos-arm64 cross compile
+        run: |
+          echo "SDKROOT=$(xcrun -sdk macosx --show-sdk-path)" >> $GITHUB_ENV
+          echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx --show-sdk-platform-version)" >> $GITHUB_ENV
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: darwin-arm64
+          path: native/darwin-arm64.node
+          if-no-files-found: error

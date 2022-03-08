@@ -1,5 +1,5 @@
-import * as bindings from './index.node';
-export * from './index.node';
+import * as bindings from './loader';
+export * from './loader';
 export const StacksNativeEncodingBindings = bindings;
 export default StacksNativeEncodingBindings;
 

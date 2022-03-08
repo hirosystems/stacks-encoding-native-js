@@ -83,6 +83,7 @@ enum ClarityTypePrefix {
     StringUTF8 = 14,
 }
 
+#[allow(dead_code)]
 fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()> {
     let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
     let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
@@ -93,6 +94,7 @@ fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()
     Ok(())
 }
 
+#[allow(dead_code)]
 fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult<()> {
     let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
     let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
