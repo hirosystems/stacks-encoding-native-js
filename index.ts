@@ -225,8 +225,31 @@ export interface DecodedTxSpendingConditionMultiSig {
     signer_stacks_address: DecodedStacksAddress;
     nonce: string;
     tx_fee: string;
-    fields: any[]; // TODO
+    fields: (TxAuthFieldPublicKey | TxAuthFieldSignature)[];
     signatures_required: number,
+}
+
+export enum TxAuthFieldTypeID {
+    /** The next 33 bytes are a compressed secp256k1 public key. If the field ID is 0x00, the key will be loaded as a compressed secp256k1 public key. */
+    PublicKeyCompressed = 0x00,
+    /** The next 33 bytes are a compressed secp256k1 public key. If it is 0x01, then the key will be loaded as an uncompressed secp256k1 public key. */
+    PublicKeyUncompressed = 0x01,
+    /** The next 65 bytes are a recoverable secp256k1 ECDSA signature. If the field ID is 0x02, then the recovered public key will be loaded as a compressed public key. */
+    SignatureCompressed = 0x02,
+    /** The next 65 bytes are a recoverable secp256k1 ECDSA signature. If it is 0x03, then the recovered public key will be loaded as an uncompressed public key. */
+    SignatureUncompressed = 0x03,
+}
+
+export interface TxAuthFieldPublicKey {
+    type_id: TxAuthFieldTypeID.PublicKeyCompressed | TxAuthFieldTypeID.PublicKeyUncompressed;
+    /** Hex encoded public key bytes. */
+    public_key: string;
+}
+
+export interface TxAuthFieldSignature {
+    type_id: TxAuthFieldTypeID.SignatureCompressed | TxAuthFieldTypeID.SignatureUncompressed;
+    /** Hex encoded signatures bytes. */
+    signature: string;
 }
 
 export interface TxMicroblockHeader {

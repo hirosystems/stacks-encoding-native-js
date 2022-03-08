@@ -1,8 +1,8 @@
-import type { DecodedClarityValueListResult, ParsedClarityValue } from ".";
+import type { DecodedClarityValueListResult, DecodedTxResult, ParsedClarityValue } from ".";
 
 export function getVersion(): string;
 
-export function decodeTransaction(arg: string | Buffer): any;
+export function decodeTransaction(arg: string | Buffer): DecodedTxResult;
 
 export function decodeClarityValueToRepr(arg: string | Buffer): string;
 
