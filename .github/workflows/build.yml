@@ -5,6 +5,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  cancel-previous-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
   build_linux-x64-musl:
     runs-on: ubuntu-latest
     container:
@@ -16,7 +24,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-x64-musl
@@ -36,7 +44,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-x64-glibc
@@ -56,7 +64,7 @@ jobs:
           node-version: '16'
       - name: Install cross compile deps
         run: |
-          apt-get update && apt-get install -y gcc-aarch64-linux-gnu
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: Configure linux-arm64 cross compile
         run: |
           echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
@@ -65,7 +73,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-arm64-glibc
@@ -85,7 +93,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: win32-x64
@@ -105,7 +113,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: darwin-x64
@@ -131,7 +139,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build
+        run: npm run build-cargo
       - uses: actions/upload-artifact@v2
         with:
           name: darwin-arm64
