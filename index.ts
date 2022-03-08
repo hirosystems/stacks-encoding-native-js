@@ -10,9 +10,11 @@ export interface DecodedClarityValueListResult {
     array: ParsedClarityValue[];
 }
 
+export type TxPostCondition = PostConditionStx | PostConditionFungible | PostConditionNonfungible;
+
 export interface DecodedPostConditionsResult {
     post_condition_mode: PostConditionModeID;
-    post_conditions: (TxPostConditionStx | TxPostConditionFungible | TxPostConditionNonfungible)[]
+    post_conditions: TxPostCondition[]
 }
 
 export interface DecodedTxResult {
@@ -20,63 +22,63 @@ export interface DecodedTxResult {
     tx_id: string;
     version: TransactionVersion;
     chain_id: number;
-    auth: TxAuthStandard | DecodedTxAuthSponsored;
+    auth: TxAuthStandard | TxAuthSponsored;
     anchor_mode: AnchorModeID;
     post_condition_mode: PostConditionModeID;
-    post_conditions: (TxPostConditionStx | TxPostConditionFungible | TxPostConditionNonfungible)[];
+    post_conditions: TxPostCondition[];
     post_conditions_buffer: Buffer;
     payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase;
 }
 
-export enum TxPostConditionAssetInfoID {
+export enum PostConditionAssetInfoID {
     STX = 0,
     FungibleAsset = 1,
     NonfungibleAsset = 2,
 }
 
-export interface TxPostConditionStx {
-    asset_info_id: TxPostConditionAssetInfoID.STX;
-    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
-    condition_code: TxPostConditionFungibleConditionCodeID;
-    condition_name: TxPostConditionFungibleConditionCodeName;
+export interface PostConditionStx {
+    asset_info_id: PostConditionAssetInfoID.STX;
+    principal: PostConditionPrincipal;
+    condition_code: PostConditionFungibleConditionCodeID;
+    condition_name: PostConditionFungibleConditionCodeName;
     amount: string;
 }
 
-export interface TxPostConditionFungible {
-    asset_info_id: TxPostConditionAssetInfoID.FungibleAsset;
-    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
-    asset: TxPostConditionAssetInfo;
-    condition_code: TxPostConditionFungibleConditionCodeID;
-    condition_name: TxPostConditionFungibleConditionCodeName;
+export interface PostConditionFungible {
+    asset_info_id: PostConditionAssetInfoID.FungibleAsset;
+    principal: PostConditionPrincipal;
+    asset: PostConditionAssetInfo;
+    condition_code: PostConditionFungibleConditionCodeID;
+    condition_name: PostConditionFungibleConditionCodeName;
     amount: string;
 }
 
-export interface TxPostConditionNonfungible {
-    asset_info_id: TxPostConditionAssetInfoID.NonfungibleAsset;
-    principal: TxPostConditionPrincipalOrigin | TxPostConditionPrincipalStandard | TxPostConditionPrincipalContract;
-    asset: TxPostConditionAssetInfo;
+export interface PostConditionNonfungible {
+    asset_info_id: PostConditionAssetInfoID.NonfungibleAsset;
+    principal: PostConditionPrincipal;
+    asset: PostConditionAssetInfo;
     asset_value: ParsedClarityValue;
-    condition_code: TxPostConditionNonfungibleConditionCodeID;
-    condition_name: TxPostConditionNonFungibleConditionName;
+    condition_code: PostConditionNonfungibleConditionCodeID;
+    condition_name: PostConditionNonFungibleConditionName;
 }
 
-export interface TxPostConditionAssetInfo {
+export interface PostConditionAssetInfo {
     contract_address: string;
     contract_name: string;
     asset_name: string;
 }
 
-export enum TxPostConditionNonfungibleConditionCodeID {
+export enum PostConditionNonfungibleConditionCodeID {
     Sent = 0x10,
     NotSent = 0x11,
 }
 
-export enum TxPostConditionNonFungibleConditionName {
+export enum PostConditionNonFungibleConditionName {
     Sent = "sent",
     NotSent = "not_sent",
 }
 
-export enum TxPostConditionFungibleConditionCodeID {
+export enum PostConditionFungibleConditionCodeID {
     SentEq = 0x01,
     SentGt = 0x02,
     SentGe = 0x03,
@@ -84,7 +86,7 @@ export enum TxPostConditionFungibleConditionCodeID {
     SentLe = 0x05,
 }
 
-export enum TxPostConditionFungibleConditionCodeName {
+export enum PostConditionFungibleConditionCodeName {
     SentEq = "sent_equal_to",
     SentGt = "sent_greater_than",
     SentGe = "sent_greater_than_or_equal_to",
@@ -92,7 +94,7 @@ export enum TxPostConditionFungibleConditionCodeName {
     SentLe = "sent_less_than_or_equal_to",
 }
 
-export enum TxPostConditionPrincipalTypeID {
+export enum PostConditionPrincipalTypeID {
     /** A STX post-condition, which pertains to the origin account's STX. */
     Origin = 0x01,
     /** A Fungible token post-condition, which pertains to one of the origin account's fungible tokens. */
@@ -101,19 +103,21 @@ export enum TxPostConditionPrincipalTypeID {
     Contract = 0x03,
 }
 
-export interface TxPostConditionPrincipalOrigin {
-    type_id: TxPostConditionPrincipalTypeID.Origin
+export type PostConditionPrincipal = PostConditionPrincipalOrigin | PostConditionPrincipalStandard | PostConditionPrincipalContract;
+
+export interface PostConditionPrincipalOrigin {
+    type_id: PostConditionPrincipalTypeID.Origin
 }
 
-export interface TxPostConditionPrincipalStandard {
-    type_id: TxPostConditionPrincipalTypeID.Standard;
+export interface PostConditionPrincipalStandard {
+    type_id: PostConditionPrincipalTypeID.Standard;
     address_version: number;
     address_hash_bytes: Buffer;
     address: string;
 }
 
-export interface TxPostConditionPrincipalContract {
-    type_id: TxPostConditionPrincipalTypeID.Contract;
+export interface PostConditionPrincipalContract {
+    type_id: PostConditionPrincipalTypeID.Contract;
     address_version: number;
     address_hash_bytes: Buffer;
     address: string;
@@ -130,19 +134,19 @@ export interface TxPayloadTokenTransfer {
 }
 
 export enum PrincipalTypeID {
-    PrincipalStandard = 5,
-    PrincipalContract = 6,
+    Standard = 5,
+    Contract = 6,
 }
 
 export interface PrincipalStandardData {
-    type_id: PrincipalTypeID.PrincipalStandard;
+    type_id: PrincipalTypeID.Standard;
     address_version: number;
     address_hash_bytes: Buffer;
     address: string;
 }
 
 export interface PrincipalContractData {
-    type_id: PrincipalTypeID.PrincipalContract;
+    type_id: PrincipalTypeID.Contract;
     contract_name: string;
     address_version: number;
     address_hash_bytes: Buffer;
@@ -157,6 +161,9 @@ export interface TxPayloadSmartContract {
 
 export interface TxPayloadContractCall {
     type_id: TxPayloadTypeID.ContractCall;
+    address_version: number;
+    address_hash_bytes: Buffer;
+    address: string;
     contract_name: string;
     function_name: string;
     function_args: ParsedClarityValue[];
@@ -182,18 +189,18 @@ export enum TxPayloadTypeID {
     Coinbase = 4,
 }
 
-export enum TxPostConditionAuthFlag {
-    AuthStandard = 0x04,
-    AuthSponsored = 0x05,
+export enum PostConditionAuthFlag {
+    Standard = 0x04,
+    Sponsored = 0x05,
 }
 
 export interface TxAuthStandard {
-    type_id: TxPostConditionAuthFlag;
+    type_id: PostConditionAuthFlag.Standard;
     origin_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
 }
 
-export interface DecodedTxAuthSponsored {
-    type_id: TxPostConditionAuthFlag;
+export interface TxAuthSponsored {
+    type_id: PostConditionAuthFlag.Sponsored;
     origin_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
     sponsor_condition: DecodedTxSpendingConditionSingleSig | DecodedTxSpendingConditionMultiSig;
 }
