@@ -1,4 +1,4 @@
-import type { DecodedClarityValueListResult, DecodedTxResult, ParsedClarityValue } from ".";
+import type { DecodedClarityValueListResult, DecodedPostConditionsResult, DecodedTxResult, ParsedClarityValue } from ".";
 
 export function getVersion(): string;
 
@@ -10,6 +10,6 @@ export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityV
 
 export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean): DecodedClarityValueListResult;
 
-export function decodePostConditions(arg: string | Buffer): any;
+export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
 export function getStacksAddress(version: number, hash160: Buffer): string;

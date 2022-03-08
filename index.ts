@@ -10,6 +10,11 @@ export interface DecodedClarityValueListResult {
     array: ParsedClarityValue[];
 }
 
+export interface DecodedPostConditionsResult {
+    post_condition_mode: PostConditionModeID;
+    post_conditions: (TxPostConditionStx | TxPostConditionFungible | TxPostConditionNonfungible)[]
+}
+
 export interface DecodedTxResult {
     /** Hex encoded string of the serialized transaction */
     tx_id: string;

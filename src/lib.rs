@@ -319,9 +319,13 @@ fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
     let input_bytes = first_arg_as_bytes(&mut cx)?;
-    // first byte is post condition mode
-    let post_condition_mode = input_bytes[0];
     let resp_obj = cx.empty_object();
+
+    // first byte is post condition mode
+    let post_condition_mode = cx.number(input_bytes[0]);
+    resp_obj.set(&mut cx, "post_condition_mode", post_condition_mode)?;
+
+    /*
     match post_condition_mode {
         1 => {
             let mode = cx.string("allow");
@@ -336,6 +340,8 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
             post_condition_mode
         ))?,
     };
+    */
+
     // next 4 bytes are array length
     let result_length = u32::from_be_bytes(input_bytes[1..5].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
