@@ -125,7 +125,8 @@ export interface TxPayloadTokenTransfer {
     recipient: PrincipalStandardData | PrincipalContractData;
     amount: string;
     /** Hex encoded string of the 34-bytes */
-    memo: string;
+    memo_hex: string;
+    memo_buffer: Buffer;
 }
 
 export enum PrincipalTypeID {

@@ -865,7 +865,10 @@ impl NeonJsSerialize for TransactionPayload {
                 obj.set(cx, "amount", amount_str)?;
 
                 let memo_hex = cx.string(encode_hex(memo));
-                obj.set(cx, "memo", memo_hex)?;
+                obj.set(cx, "memo_hex", memo_hex)?;
+
+                let memo_hex = JsBuffer::external(cx, memo.to_bytes());
+                obj.set(cx, "memo_buffer", memo_hex)?;
             }
             TransactionPayload::ContractCall(ref contract_call) => {
                 let type_id = cx.number(TransactionPayloadID::ContractCall as u8);
