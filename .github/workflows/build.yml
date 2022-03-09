@@ -3,6 +3,13 @@ name: build
 on:
   push:
   workflow_dispatch:
+    inputs:
+      npm-package-version:
+        description: Specify the package.json npm package version
+        required: true
+      npm-package-tag:
+        description: Specify the tag to be used for npm publish, e.g. `latest`, `beta`, `alpha`
+        required: true
 
 jobs:
   cancel-previous-runs:
@@ -32,6 +39,7 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-musl:
+    if: ${{ false }} # disabled, this compiles but the binary does not load correctly
     runs-on: ubuntu-latest
     container:
       image: rust:alpine
@@ -176,3 +184,46 @@ jobs:
           name: darwin-arm64
           path: native/darwin-arm64.node
           if-no-files-found: error
+
+  npm-package:
+    runs-on: ubuntu-latest
+    needs:
+      - build_linux-x64-musl
+      - build_linux-x64-glibc
+      - build_linux-arm64-glibc
+      - build_darwin-x64
+      - build_darwin-arm64
+    env:
+      NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha' }}
+      NPM_PACKAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-tag || 'alpha' }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - uses: actions/download-artifact@v2
+        with:
+          path: native
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: native
+      - name: npm version
+        run: npm version --git-tag-version=false --allow-same-version $NPM_PACKAGE_VERSION
+      - name: npm build
+        run: |
+          npm i
+          npm build-ts
+      - name: npm pack
+        run: |
+          npm pack
+          mv "stacks-encoding-native-js-$NPM_PACKAGE_VERSION.tgz" "stacks-encoding-native-js.tgz"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: stacks-encoding-native-js.tgz
+          path: stacks-encoding-native-js.tgz
+          if-no-files-found: error
+      - name: Publish npm package
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          NPM_API_KEY: ${{ secrets.NPM_API_KEY }}
+        run: npm publish stacks-encoding-native-js.tgz --tag $NPM_PACKAGE_TAG
