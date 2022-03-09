@@ -207,8 +207,8 @@ jobs:
           path: native
       - name: Position downloaded artifacts
         run: |
-          find native -mindepth 2 -type f -exec mv -t native -i '{}' +
-          find native -type d -empty -delete
+          find . -mindepth 2 -type f -exec mv -t . -i '{}' +
+          find . -type d -empty -delete
           ls -R
         working-directory: native
       - name: npm version
