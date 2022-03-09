@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       npm-package-version:
-        description: Specify the package.json npm package version
+        description: Specify the package.json npm package version, e.g. `0.0.1-alpha.0`
         required: true
       npm-package-tag:
         description: Specify the tag to be used for npm publish, e.g. `latest`, `beta`, `alpha`
@@ -191,10 +191,11 @@ jobs:
       - build_linux-x64-musl
       - build_linux-x64-glibc
       - build_linux-arm64-glibc
+      - build_win-x64
       - build_darwin-x64
       - build_darwin-arm64
     env:
-      NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha' }}
+      NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha.0' }}
       NPM_PACKAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-tag || 'alpha' }}
     steps:
       - uses: actions/checkout@v2
@@ -212,7 +213,7 @@ jobs:
       - name: npm build
         run: |
           npm i
-          npm build-ts
+          npm run build-ts
       - name: npm pack
         run: |
           npm pack
