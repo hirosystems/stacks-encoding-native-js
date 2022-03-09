@@ -58,12 +58,11 @@ jobs:
             apk add alpine-sdk git nodejs npm rustup
             rustup-init -y
             source $HOME/.cargo/env
-            echo "[install] current dir: $(pwd)"
-            echo ls -al .
           # Produce a binary artifact and place it in the mounted volume
           run: |
             echo "[run] current dir: $(pwd)"
             echo ls -al .
+            source $HOME/.cargo/env
             npm i
             npm run build-cargo
             cp native/linux-arm64-musl.node /artifacts/.
