@@ -65,7 +65,7 @@ jobs:
             source $HOME/.cargo/env
             npm i
             cargo --version
-            npm run build-cargo
+            cargo build --release
             cp native/linux-arm64-musl.node /artifacts/.
       - name: Show the artifact
         # Items placed in /artifacts in the container will be in
