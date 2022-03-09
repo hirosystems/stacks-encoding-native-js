@@ -225,5 +225,5 @@ jobs:
       - name: Publish npm package
         if: github.event_name == 'workflow_dispatch'
         env:
-          NPM_API_KEY: ${{ secrets.NPM_API_KEY }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish stacks-encoding-native-js.tgz --tag $NPM_PACKAGE_TAG

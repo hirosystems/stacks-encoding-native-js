@@ -1,7 +1,7 @@
 {
   "name": "stacks-encoding-native-js",
   "version": "0.1.0",
-  "description": "test desc 12345",
+  "description": "Encoding & decoding functions for the Stacks blockchain exposed as a fast native Node.js addon",
   "main": "index.js",
   "scripts": {
     "build-cargo": "node build.js",
@@ -9,8 +9,8 @@
     "build": "npm run build-ts && npm run build-cargo",
     "test": "cargo test"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Matthew Little",
+  "license": "GPL-3.0",
   "devDependencies": {
     "cargo-cp-artifact": "^0.1",
     "typescript": "^4.6.2"
