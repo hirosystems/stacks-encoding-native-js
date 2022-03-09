@@ -43,6 +43,13 @@ jobs:
         run: rustup target add aarch64-unknown-linux-musl
       - name: Configure linux-arm64-musl cross compile
         run: |
+          curl -O https://musl.cc/aarch64-linux-musl-native.tgz
+          tar xf aarch64-linux-musl-native.tgz
+          echo "$(pwd)/aarch64-linux-musl-native/bin"
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=$(pwd)/aarch64-linux-musl-native/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CC=$(pwd)/aarch64-linux-musl-native/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CC_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-native/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CXX_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-native/bin/aarch64-linux-musl-g++" >> $GITHUB_ENV
           echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
       - name: npm i
         run: npm i

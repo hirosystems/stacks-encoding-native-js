@@ -26,10 +26,6 @@ let configuredTarget = `${targetPlatform}-${targetArch}`;
 if (targetPlatform === 'linux') {
   const targetLibc = process.env['TARGET_LIBC'] ?? require('detect-libc').familySync() ?? 'glibc';
   configuredTarget += '-' + targetLibc;
-  if (targetLibc === 'musl') {
-    // Required in order to compile cdylib crates on musl targets
-    process.env['RUSTFLAGS'] = '-C target-feature=-crt-static';
-  }
 }
 
 const [outputFileName, cargoTarget] = targetMap[configuredTarget]
