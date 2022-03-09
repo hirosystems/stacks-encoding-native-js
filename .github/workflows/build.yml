@@ -55,21 +55,15 @@ jobs:
           shell: /bin/ash
           install: |
             apk update
-            apk add alpine-sdk git nodejs npm rustup
+            apk add alpine-sdk git rustup
             rustup-init -y --profile minimal
-            source $HOME/.cargo/env
           # Produce a binary artifact and place it in the mounted volume
           run: |
-            echo "[run] current dir: $(pwd)"
-            echo ls -al .
             source $HOME/.cargo/env
-            npm i
-            cargo --version
             cargo build --release
-            cp native/linux-arm64-musl.node /artifacts/.
+            cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - name: Show the artifact
-        # Items placed in /artifacts in the container will be in
-        # ${PWD}/artifacts on the host.
+        # Items placed in /artifacts in the container will be in ${PWD}/artifacts on the host.
         run: |
           ls -al "${PWD}/artifacts"
       - uses: actions/upload-artifact@v2
