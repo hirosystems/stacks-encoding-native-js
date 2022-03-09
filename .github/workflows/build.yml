@@ -228,6 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build_linux-x64-musl
+      - build_linux-arm64-musl
       - build_linux-x64-glibc
       - build_linux-arm64-glibc
       - build_win-x64
