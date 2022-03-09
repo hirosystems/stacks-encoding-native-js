@@ -42,9 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: uraimo/run-on-arch-action@v2
-        name: Build artifact
-        id: build
+      - name: Run on architecture
+        uses: uraimo/run-on-arch-action@v2.1.1
         with:
           arch: aarch64
           distro: alpine_latest
