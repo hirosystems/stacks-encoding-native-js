@@ -35,11 +35,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:alpine
-      options: --platform linux/arm64
     steps:
       - uses: actions/checkout@v2
       - name: Install deps
         run: apk add alpine-sdk git nodejs npm
+      - name: Install rustup aarch64-unknown-linux-musl target
+        run: rustup target add aarch64-unknown-linux-musl
+      - name: Configure linux-arm64-musl cross compile
+        run: |
+          echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
