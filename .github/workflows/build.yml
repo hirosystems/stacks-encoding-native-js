@@ -39,6 +39,45 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-musl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: uraimo/run-on-arch-action@v2
+        name: Build artifact
+        id: build
+        with:
+          arch: aarch64
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
+          shell: /bin/ash
+          install: |
+            apk update
+            apk add alpine-sdk git nodejs npm rustup
+            rustup-init -y
+            source $HOME/.cargo/env
+            npm i
+          # Produce a binary artifact and place it in the mounted volume
+          run: |
+            npm run build-cargo
+            cp native/linux-arm64-musl.node /artifacts/.
+            cp $(which git) "/artifacts/${artifact_name}"
+            echo "Produced artifact at /artifacts/${artifact_name}"
+      - name: Show the artifact
+        # Items placed in /artifacts in the container will be in
+        # ${PWD}/artifacts on the host.
+        run: |
+          ls -al "${PWD}/artifacts"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm64-musl
+          path: artifacts/linux-arm64-musl.node
+          if-no-files-found: error
+
+  build_linux-arm64-musl_old:
     if: ${{ false }} # disabled, this compiles but the binary does not load correctly
     runs-on: ubuntu-latest
     container:
