@@ -202,11 +202,14 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           path: native
-      - name: Display structure of downloaded files
-        run: ls -R
+      - name: Position downloaded artifacts
+        run: |
+          find native -mindepth 2 -type f -exec mv -t native -i '{}' +
+          find native -type d -empty -delete
+          ls -R
         working-directory: native
       - name: npm version
         run: npm version --git-tag-version=false --allow-same-version $NPM_PACKAGE_VERSION

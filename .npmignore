@@ -1,0 +1,5 @@
+node_modules
+src/lib.rs
+target/*
+stacks-encoding-native-js*.tgz
+Cargo.lock
