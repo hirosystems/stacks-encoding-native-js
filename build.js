@@ -44,8 +44,12 @@ if (fs.existsSync(outputFilePath)) {
 }
 
 let runArgs = [
-  '-nc', outputFilePath, '--',
-  'cargo', 'build', '--message-format=json-render-diagnostics', '--release',
+  '-nc', outputFilePath,
+  '--',
+  'cargo',
+  'build',
+  '--message-format=json-render-diagnostics',
+  '--release',
   '--target', cargoTarget
 ];
 

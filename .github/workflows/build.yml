@@ -31,6 +31,25 @@ jobs:
           path: native/linux-x64-musl.node
           if-no-files-found: error
 
+  build_linux-arm64-musl:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:alpine
+      options: --platform linux/arm64
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install deps
+        run: apk add alpine-sdk git nodejs npm
+      - name: npm i
+        run: npm i
+      - name: Build
+        run: npm run build-cargo
+      - uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm64-musl
+          path: native/linux-arm64-musl.node
+          if-no-files-found: error
+
   build_linux-x64-glibc:
     runs-on: ubuntu-latest
     steps:
