@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run on architecture
-        uses: uraimo/run-on-arch-action@v2.1.0
+        uses: uraimo/run-on-arch-action@v2.1.1
         with:
           arch: aarch64
           distro: alpine_latest
@@ -60,11 +60,11 @@ jobs:
             source $HOME/.cargo/env
             echo "[install] current dir: $(pwd)"
             echo ls -al .
-            npm i
           # Produce a binary artifact and place it in the mounted volume
           run: |
             echo "[run] current dir: $(pwd)"
             echo ls -al .
+            npm i
             npm run build-cargo
             cp native/linux-arm64-musl.node /artifacts/.
       - name: Show the artifact
