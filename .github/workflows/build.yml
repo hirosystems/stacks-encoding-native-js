@@ -251,10 +251,9 @@ jobs:
       - name: Position downloaded artifacts
         run: |
           mkdir -p ./native
-          find . -mindepth 2 -type f -exec mv -t . -i '{}' +
-          find . -type d -empty -delete
-          ls -R
-        working-directory: native
+          find ./native -mindepth 2 -type f -exec mv -t ./native -i '{}' +
+          find ./native -type d -empty -delete
+          ls -R ./native
       - name: npm version
         run: npm version --git-tag-version=false --allow-same-version $NPM_PACKAGE_VERSION
       - name: npm build
