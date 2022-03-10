@@ -252,7 +252,7 @@ jobs:
         run: |
           mkdir -p ./native
           find ./native -mindepth 2 -type f -exec mv -t ./native -i '{}' +
-          find ./native -type d -empty -delete
+          find ./native -mindepth 1 -type d -empty -delete
           ls -R ./native
       - name: npm version
         run: npm version --git-tag-version=false --allow-same-version $NPM_PACKAGE_VERSION
