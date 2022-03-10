@@ -44,7 +44,7 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-musl:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include-linux-arm64-musl}}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include-linux-arm64-musl == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
