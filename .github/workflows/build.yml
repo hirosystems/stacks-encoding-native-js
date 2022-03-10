@@ -250,6 +250,7 @@ jobs:
           path: native
       - name: Position downloaded artifacts
         run: |
+          mkdir -p ./native
           find . -mindepth 2 -type f -exec mv -t . -i '{}' +
           find . -type d -empty -delete
           ls -R
