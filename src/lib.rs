@@ -23,10 +23,15 @@ use clarity::vm::types::{
 };
 use git_version::git_version;
 use hex::{FromHex, FromHexError};
+use lazy_static::lazy_static;
 use neon::{prelude::*, types::buffer::TypedArray};
+use regex::Regex;
 use sha2::{Digest, Sha512_256};
 use stacks_common::codec::StacksMessageCodec;
 use std::convert::{TryFrom, TryInto};
+use unicode_segmentation::UnicodeSegmentation;
+
+mod unicode_printable;
 
 const GIT_VERSION: &str = git_version!(
     args = ["--all", "--long", "--always"],
@@ -52,9 +57,10 @@ fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
     if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
-        return decode_hex(&data.as_ref()[2..]);
+        FromHex::from_hex(&data.as_ref()[2..])
+    } else {
+        FromHex::from_hex(data)
     }
-    FromHex::from_hex(data)
 }
 
 fn encode_hex<T: AsRef<[u8]>>(data: T) -> String {
@@ -1084,16 +1090,128 @@ fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     return Ok(stacks_address_string);
 }
 
+fn memo_normalize<T: AsRef<[u8]>>(input: T) -> String {
+    let memo_str = String::from_utf8_lossy(input.as_ref());
+    let mut result_str: String = String::with_capacity(memo_str.len());
+    for g in memo_str.graphemes(true) {
+        let chars: Vec<char> = g.chars().collect();
+        // If char length is greater than one, assume printable grapheme cluster
+        if chars.len() == 1 {
+            if unicode_printable::is_printable(chars[0]) {
+                result_str.push(chars[0]);
+            } else {
+                result_str.push(' ');
+            }
+        } else {
+            result_str.push_str(g);
+        }
+    }
+    lazy_static! {
+        // Match one or more spans of `�` (unicode replacement character) and/or `\s` (whitespace)
+        static ref UNICODE_REPLACEMENT_RE: Regex = Regex::new(r"(\u{FFFD}|\s)+").unwrap();
+    }
+    let memo_no_unknown = UNICODE_REPLACEMENT_RE.replace_all(&result_str, " ");
+    let memo_no_invalid = memo_no_unknown.trim();
+    memo_no_invalid.to_string()
+}
+
+fn memo_to_string(mut cx: FunctionContext) -> JsResult<JsString> {
+    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    let normalized = memo_normalize(input_bytes);
+    let str_result = cx.string(normalized);
+    Ok(str_result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn list_decode_test() {
-        let val_bytes = hex::decode("0b000000640100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d400100000000000000000000000000c65d40").unwrap();
-        let value = ClarityValue::consensus_deserialize(&mut &val_bytes[..]).unwrap();
-        let result = format!("{}", value);
-        let result2 = value.to_string();
-        assert_eq!(result2, "asdf");
-        assert_eq!(result, "asdf");
+
+    #[test]
+    fn test_memo_decode_whitespace() {
+        let input = "hello   world";
+        let output1 = memo_normalize(input);
+        let expected1 = "hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_unknown_unicode() {
+        let input = "hello�world  test part1   goodbye�world  test part2     ";
+        let output1 = memo_normalize(input);
+        let expected1 = "hello world test part1 goodbye world test part2";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_misc_btc_coinbase() {
+        let input = decode_hex("037e180b04956b4e68627463706f6f6c2f3266646575fabe6d6df77973b452568eb2f43593285804dad9d7ef057eada5ff9f2a1634ec43f514b1020000008e9b20aa0ebfd204924b040000000000").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "~ kNhbtcpool/2fdeu mm ys RV 5 (X ~ * 4 C K";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_misc_btc_coinbase_2() {
+        let input = decode_hex("037c180b2cfabe6d6d5e0eb001a2eaea9c5e39b7f54edd5c23eb6e684dab1995191f664658064ba7dc10000000f09f909f092f4632506f6f6c2f6500000000000000000000000000000000000000000000000000000000000000000000000500f3fa0200").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "| , mm^ ^9 N \\# nhM fFX K 🐟 /F2Pool/e";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_grapheme_extended() {
+        let input = "👩‍👩‍👧‍👦 hello world";
+        let output1 = memo_normalize(input);
+        let expected1 = "👩‍👩‍👧‍👦 hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_unicode() {
+        let input = decode_hex("f09f87b3f09f87b12068656c6c6f20776f726c64").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "🇳🇱 hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_padded_start() {
+        let input = decode_hex("00000000000068656c6c6f20776f726c64").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_padded_end() {
+        let input = decode_hex("68656c6c6f20776f726c64000000000000").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_padded_middle() {
+        let input = decode_hex("68656c6c6f20776f726c6400000000000068656c6c6f20776f726c64").unwrap();
+        let output1 = memo_normalize(input);
+        let expected1 = "hello world hello world";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_unicode_scalar() {
+        let input = "hello worldy̆ test";
+        let output1 = memo_normalize(input);
+        let expected1 = "hello worldy̆ test";
+        assert_eq!(output1, expected1);
+    }
+
+    #[test]
+    fn test_memo_decode_zero_width_joiner() {
+        let input = "👨\u{200D}👩";
+        let output1 = memo_normalize(input);
+        let expected1 = "👨‍👩";
+        assert_eq!(output1, expected1);
     }
 }
 
@@ -1106,5 +1224,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("getStacksAddress", get_stacks_address)?;
+    cx.export_function("memoToString", memo_to_string)?;
     Ok(())
 }

@@ -13,3 +13,5 @@ export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolea
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
 export function getStacksAddress(version: number, hash160: Buffer): string;
+
+export function memoToString(memo: string | Buffer): string;

@@ -1066,10 +1066,13 @@ dependencies = [
  "clarity",
  "git-version",
  "hex",
+ "lazy_static",
  "neon",
+ "regex",
  "serde_json",
  "sha2 0.10.2",
  "stacks-common",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -1280,6 +1283,12 @@ checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
 
 [[package]]
 name = "unicode-xid"
