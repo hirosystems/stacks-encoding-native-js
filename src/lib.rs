@@ -1,17 +1,19 @@
 use blockstack_lib::{
     address::{c32::c32_address_decode, AddressHashMode},
+    burnchains::bitcoin::address::BitcoinAddress,
+    chainstate::stacks::{
+        address::StacksAddressExtensions, MultisigSpendingCondition, SinglesigSpendingCondition,
+        StacksTransaction, TransactionAuth, TransactionAuthField, TransactionAuthFieldID,
+        TransactionAuthFlags, TransactionPublicKeyEncoding, TransactionSpendingCondition,
+        TransactionVersion,
+    },
     chainstate::stacks::{
         AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
         PostConditionPrincipal, PostConditionPrincipalID, StacksMicroblockHeader,
         TransactionContractCall, TransactionPayload, TransactionPayloadID,
         TransactionPostCondition, TransactionSmartContract,
     },
-    chainstate::stacks::{
-        MultisigSpendingCondition, SinglesigSpendingCondition, StacksTransaction, TransactionAuth,
-        TransactionAuthField, TransactionAuthFieldID, TransactionAuthFlags,
-        TransactionPublicKeyEncoding, TransactionSpendingCondition, TransactionVersion,
-    },
-    types::{chainstate::StacksAddress, StacksPublicKeyBuffer},
+    types::{chainstate::StacksAddress, Address, StacksPublicKeyBuffer},
     util::hash::Hash160,
     vm::{
         analysis::contract_interface_builder::ContractInterfaceAtomType,
@@ -1102,6 +1104,63 @@ fn is_valid_stacks_address(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     }
 }
 
+fn decode_stacks_address(mut cx: FunctionContext) -> JsResult<JsArray> {
+    let address_string = cx.argument::<JsString>(0)?.value(&mut cx);
+    let address = c32_address_decode(&address_string)
+        .or_else(|e| cx.throw_error(format!("Error parsing Stacks address {}", e)))?;
+    let version = cx.number(address.0);
+    let hash160 = JsBuffer::external(&mut cx, address.1);
+    let array_resp = JsArray::new(&mut cx, 2);
+    array_resp.set(&mut cx, 0, version)?;
+    array_resp.set(&mut cx, 1, hash160)?;
+    Ok(array_resp)
+}
+
+fn stacks_address_from_parts(mut cx: FunctionContext) -> JsResult<JsString> {
+    let version = cx.argument::<JsNumber>(0)?.value(&mut cx);
+    let hash160_arg = arg_as_bytes(&mut cx, 1)?;
+    let hash160 =
+        Hash160(hash160_arg.try_into().or_else(|e| {
+            cx.throw_error(format!("Error converting to hash160 bytes: {:?}", e))?
+        })?);
+    let stacks_address = StacksAddress::new(version as u8, hash160);
+    let resp = cx.string(stacks_address.to_string());
+    Ok(resp)
+}
+
+fn stacks_to_bitcoin_address_internal(input: String) -> Result<String, String> {
+    let stacks_address = match StacksAddress::from_string(&input) {
+        Some(addr) => addr,
+        None => Err("Error parsing data to Stacks address")?,
+    };
+    let bitcoin_address = stacks_address.to_b58();
+    Ok(bitcoin_address)
+}
+
+fn stacks_to_bitcoin_address(mut cx: FunctionContext) -> JsResult<JsString> {
+    let stacks_address_arg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let btc_address =
+        stacks_to_bitcoin_address_internal(stacks_address_arg).or_else(|e| cx.throw_error(e))?;
+    let btc_address = cx.string(btc_address);
+    Ok(btc_address)
+}
+
+fn from_bitcoin_address_internal(input: String) -> Result<String, String> {
+    let bitcoin_address = BitcoinAddress::from_b58(&input)
+        .or_else(|e| Err(format!("Error parsing Bitcoin address: {}", e)))?;
+    let stacks_address = StacksAddress::from_bitcoin_address(&bitcoin_address);
+    let stacks_address_str = stacks_address.to_string();
+    Ok(stacks_address_str)
+}
+
+fn from_bitcoin_address(mut cx: FunctionContext) -> JsResult<JsString> {
+    let bitcoin_address_arg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let bitcoin_address =
+        from_bitcoin_address_internal(bitcoin_address_arg).or_else(|e| cx.throw_error(e))?;
+    let resp = cx.string(bitcoin_address);
+    Ok(resp)
+}
+
 fn memo_normalize<T: AsRef<[u8]>>(input: T) -> String {
     let memo_str = String::from_utf8_lossy(input.as_ref());
     let mut result_str: String = String::with_capacity(memo_str.len());
@@ -1225,6 +1284,38 @@ mod tests {
         let expected1 = "👨‍👩";
         assert_eq!(output1, expected1);
     }
+
+    #[test]
+    fn test_stacks_to_bitcoin_address_mainnet() {
+        let input = "SP2GKVKM12JZ0YW3ZJH3GMBJYGVNM0BS94ERA45AM";
+        let output = stacks_to_bitcoin_address_internal(input.to_string()).unwrap();
+        let expected = "1FhZqHcrXaWcNCJPEGn2BRZ9angJvYfTBT";
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_stacks_to_bitcoin_address_testnet() {
+        let input = "ST2M9C0SHDV4FMXF3R0P98H8GQPW5824DVEJ9MVQZ";
+        let output = stacks_to_bitcoin_address_internal(input.to_string()).unwrap();
+        let expected = "mvtMXL9MYH8HaNz7u9AgapGqoFYpNDfKBx";
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_bitcoin_to_stacks_address_mainnet() {
+        let input = "1FhZqHcrXaWcNCJPEGn2BRZ9angJvYfTBT";
+        let output = from_bitcoin_address_internal(input.to_string()).unwrap();
+        let expected = "SP2GKVKM12JZ0YW3ZJH3GMBJYGVNM0BS94ERA45AM";
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_bitcoin_to_stacks_address_testnet() {
+        let input = "mvtMXL9MYH8HaNz7u9AgapGqoFYpNDfKBx";
+        let output = from_bitcoin_address_internal(input.to_string()).unwrap();
+        let expected = "ST2M9C0SHDV4FMXF3R0P98H8GQPW5824DVEJ9MVQZ";
+        assert_eq!(output, expected);
+    }
 }
 
 #[neon::main]
@@ -1236,7 +1327,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("getStacksAddress", get_stacks_address)?;
+    cx.export_function("stacksToBitcoinAddress", stacks_to_bitcoin_address)?;
+    cx.export_function("bitcoinToStacksAddress", from_bitcoin_address)?;
     cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;
+    cx.export_function("decodeStacksAddress", decode_stacks_address)?;
+    cx.export_function("stacksAddressFromParts", stacks_address_from_parts)?;
     cx.export_function("memoToString", memo_to_string)?;
     Ok(())
 }

@@ -14,6 +14,14 @@ export function decodePostConditions(arg: string | Buffer): DecodedPostCondition
 
 export function getStacksAddress(version: number, hash160: string | Buffer): string;
 
+export function stacksToBitcoinAddress(stackAddress: string): string;
+
+export function bitcoinToStacksAddress(bitcoinAddress: string): string;
+
 export function isValidStacksAddress(address: string): boolean;
+
+export function decodeStacksAddress(address: string): [version: number, hash160: Buffer];
+
+export function stacksAddressFromParts(version: number, hash160: string | Buffer): string;
 
 export function memoToString(memo: string | Buffer): string;
