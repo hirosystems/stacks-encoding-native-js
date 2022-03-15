@@ -1,5 +1,5 @@
 use blockstack_lib::{
-    address::{AddressHashMode, c32::c32_address_decode},
+    address::{c32::c32_address_decode, AddressHashMode},
     chainstate::stacks::{
         AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
         PostConditionPrincipal, PostConditionPrincipalID, StacksMicroblockHeader,
@@ -118,8 +118,8 @@ fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
     Ok(result)
 }
 
-fn first_arg_as_bytes<'a>(cx: &mut FunctionContext<'a>) -> NeonResult<Vec<u8>> {
-    let input_arg: Handle<JsValue> = cx.argument(0)?;
+fn arg_as_bytes<'a>(cx: &mut FunctionContext<'a>, arg_index: i32) -> NeonResult<Vec<u8>> {
+    let input_arg: Handle<JsValue> = cx.argument(arg_index)?;
     if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
         let val_bytes = decode_hex(handle.value(cx))
             .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
@@ -292,7 +292,7 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let val_bytes = first_arg_as_bytes(&mut cx)?;
+    let val_bytes = arg_as_bytes(&mut cx, 0)?;
     let cursor = &mut &val_bytes[..];
     let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
@@ -318,7 +318,7 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let val_bytes = first_arg_as_bytes(&mut cx)?;
+    let val_bytes = arg_as_bytes(&mut cx, 0)?;
     let cursor = &mut &val_bytes[..];
     let clarity_value = ClarityValue::consensus_deserialize(cursor)
         .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
@@ -326,7 +326,7 @@ fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
 }
 
 fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    let input_bytes = arg_as_bytes(&mut cx, 0)?;
     let resp_obj = cx.empty_object();
 
     // first byte is post condition mode
@@ -381,7 +381,7 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    let input_bytes = arg_as_bytes(&mut cx, 0)?;
     let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
     let array_result = JsArray::new(&mut cx, result_length);
 
@@ -422,7 +422,7 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    let input_bytes = arg_as_bytes(&mut cx, 0)?;
     let byte_cursor = &mut &input_bytes[..];
     let tx = StacksTransaction::consensus_deserialize(byte_cursor)
         .or_else(|e| cx.throw_error(format!("Failed to decode transaction: {:?}\n", &e)))?;
@@ -1083,8 +1083,11 @@ impl NeonJsSerialize<(), Vec<u8>> for StacksMicroblockHeader {
 
 fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     let address_version = cx.argument::<JsNumber>(0)?.value(&mut cx);
-    let address_bytes_arg = cx.argument::<JsBuffer>(1)?;
-    let address_hash160 = Hash160(address_bytes_arg.as_slice(&cx).try_into().unwrap());
+    let address_bytes_arg = arg_as_bytes(&mut cx, 1)?;
+    let hash160_bytes: [u8; 20] = address_bytes_arg
+        .try_into()
+        .or_else(|e| cx.throw_error(format!("Error converting to hash160 bytes: {:?}", e))?)?;
+    let address_hash160 = Hash160(hash160_bytes);
     let stacks_address = StacksAddress::new(address_version as u8, address_hash160);
     let stacks_address_string = cx.string(stacks_address.to_string());
     return Ok(stacks_address_string);
@@ -1094,12 +1097,8 @@ fn is_valid_stacks_address(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let address_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let address = c32_address_decode(&address_string);
     match address {
-        Ok(_) => {
-            Ok(cx.boolean(true))
-        },
-        Err(_) => {
-            Ok(cx.boolean(false))
-        }
+        Ok(_) => Ok(cx.boolean(true)),
+        Err(_) => Ok(cx.boolean(false)),
     }
 }
 
@@ -1129,7 +1128,7 @@ fn memo_normalize<T: AsRef<[u8]>>(input: T) -> String {
 }
 
 fn memo_to_string(mut cx: FunctionContext) -> JsResult<JsString> {
-    let input_bytes = first_arg_as_bytes(&mut cx)?;
+    let input_bytes = arg_as_bytes(&mut cx, 0)?;
     let normalized = memo_normalize(input_bytes);
     let str_result = cx.string(normalized);
     Ok(str_result)

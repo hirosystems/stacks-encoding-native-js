@@ -12,7 +12,7 @@ export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolea
 
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
-export function getStacksAddress(version: number, hash160: Buffer): string;
+export function getStacksAddress(version: number, hash160: string | Buffer): string;
 
 export function isValidStacksAddress(address: string): boolean;
 
