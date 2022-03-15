@@ -1,5 +1,5 @@
 use blockstack_lib::{
-    address::AddressHashMode,
+    address::{AddressHashMode, c32::c32_address_decode},
     chainstate::stacks::{
         AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
         PostConditionPrincipal, PostConditionPrincipalID, StacksMicroblockHeader,
@@ -1090,6 +1090,19 @@ fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     return Ok(stacks_address_string);
 }
 
+fn is_valid_stacks_address(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let address_string = cx.argument::<JsString>(0)?.value(&mut cx);
+    let address = c32_address_decode(&address_string);
+    match address {
+        Ok(_) => {
+            Ok(cx.boolean(true))
+        },
+        Err(_) => {
+            Ok(cx.boolean(false))
+        }
+    }
+}
+
 fn memo_normalize<T: AsRef<[u8]>>(input: T) -> String {
     let memo_str = String::from_utf8_lossy(input.as_ref());
     let mut result_str: String = String::with_capacity(memo_str.len());
@@ -1224,6 +1237,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("getStacksAddress", get_stacks_address)?;
+    cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;
     cx.export_function("memoToString", memo_to_string)?;
     Ok(())
 }
