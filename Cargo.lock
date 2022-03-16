@@ -575,8 +575,9 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "0.9.1"
-source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "544694d02bbff81f78dba5ef7d29341cc6d256edcae4fbb2d684491d5755c748"
 dependencies = [
  "neon-build",
  "neon-macros",
@@ -587,13 +588,15 @@ dependencies = [
 
 [[package]]
 name = "neon-build"
-version = "0.9.1"
-source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd4ec682b1a7837c84d9866c342ac6ffe2ce9712e844e4015f31d01bdeb73608"
 
 [[package]]
 name = "neon-macros"
-version = "0.9.1"
-source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "040746ef4e65edca7cd35597ad0ff7d8ad3b3f6018316d31a30b4afc23b0e548"
 dependencies = [
  "quote",
  "syn",
@@ -602,8 +605,9 @@ dependencies = [
 
 [[package]]
 name = "neon-runtime"
-version = "0.9.1"
-source = "git+https://github.com/zone117x/neon?rev=bdb936a7fba8fb932fc61cbe529e06f65f75f9d9#bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c4b1a7f8f569b4e43feff04931924cebe40a630fa258d2a28147525d247defe"
 dependencies = [
  "cfg-if 1.0.0",
  "libloading",
