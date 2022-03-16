@@ -13,9 +13,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Use stacks-blockchain develop branch (commit hash as of 2022-03-01)
-stacks-common = { git = "https://github.com/stacks-network/stacks-blockchain", rev = "d82f467a9b265027905522fb3391860ec2a160e3" }
-clarity = { git = "https://github.com/stacks-network/stacks-blockchain", rev = "d82f467a9b265027905522fb3391860ec2a160e3" }
-blockstack-core = { git = "https://github.com/stacks-network/stacks-blockchain", rev = "d82f467a9b265027905522fb3391860ec2a160e3" }
+# Updated to `feat/c32-optimizations` branch https://github.com/stacks-network/stacks-blockchain/pull/3075
+stacks-common = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
+clarity = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
+blockstack-core = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
 
 hex = "0.4"
 regex = "1.5"
