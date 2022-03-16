@@ -619,9 +619,10 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
             TransactionVersion::Mainnet => stacks_address_hash_mode.to_version_mainnet(),
             TransactionVersion::Testnet => stacks_address_hash_mode.to_version_testnet(),
         };
-        let stacks_address =
-            cx.string(StacksAddress::new(stacks_address_version, self.signer).to_string());
-        obj.set(cx, "signer_stacks_address", stacks_address)?;
+        let stacks_address = StacksAddress::new(stacks_address_version, self.signer);
+        let stacks_address_obj = cx.empty_object();
+        stacks_address.neon_js_serialize(cx, &stacks_address_obj, &())?;
+        obj.set(cx, "signer_stacks_address", stacks_address_obj)?;
 
         // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());
