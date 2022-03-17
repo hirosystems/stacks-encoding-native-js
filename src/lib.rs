@@ -1,5 +1,8 @@
 use blockstack_lib::{
-    address::{c32::c32_address_decode, AddressHashMode},
+    address::{
+        c32::{c32_address, c32_address_decode},
+        AddressHashMode,
+    },
     burnchains::bitcoin::address::BitcoinAddress,
     chainstate::stacks::{
         address::StacksAddressExtensions, MultisigSpendingCondition, SinglesigSpendingCondition,
@@ -14,7 +17,6 @@ use blockstack_lib::{
         TransactionPostCondition, TransactionSmartContract,
     },
     types::{chainstate::StacksAddress, Address, StacksPublicKeyBuffer},
-    util::hash::Hash160,
     vm::{
         analysis::contract_interface_builder::ContractInterfaceAtomType,
         types::{CharType, PrincipalData, SequenceData, StandardPrincipalData},
@@ -120,18 +122,37 @@ fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
     Ok(result)
 }
 
-fn arg_as_bytes<'a>(cx: &mut FunctionContext<'a>, arg_index: i32) -> NeonResult<Vec<u8>> {
+fn arg_as_bytes_copied(cx: &mut FunctionContext, arg_index: i32) -> NeonResult<Vec<u8>> {
     let input_arg: Handle<JsValue> = cx.argument(arg_index)?;
     if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
         let val_bytes = decode_hex(handle.value(cx))
             .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
         Ok(val_bytes)
-    } else if let Ok(mut handle) = input_arg.downcast::<JsBuffer, _>(cx) {
-        let slice = handle.as_mut_slice(cx);
+    } else if let Ok(handle) = input_arg.downcast::<JsBuffer, _>(cx) {
+        let slice = handle.as_slice(cx);
         let val_bytes: Vec<u8> = slice.into();
         Ok(val_bytes)
     } else {
         cx.throw_error("Argument must be a hex string or a Buffer")
+    }
+}
+
+fn arg_as_bytes<F, T>(cx: &mut FunctionContext, arg_index: i32, cb: F) -> Result<T, String>
+where
+    F: Fn(&[u8]) -> Result<T, String>,
+{
+    let input_arg: Handle<JsValue> = cx
+        .argument(arg_index)
+        .or_else(|e| Err(format!("Error getting function arg {}: {}", arg_index, e)))?;
+    if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
+        let val_bytes =
+            decode_hex(handle.value(cx)).or_else(|e| Err(format!("Hex parsing error: {}", e)))?;
+        cb(&val_bytes)
+    } else if let Ok(handle) = input_arg.downcast::<JsBuffer, _>(cx) {
+        let slice = handle.as_slice(cx);
+        cb(slice)
+    } else {
+        Err("Argument must be a hex string or a Buffer".to_string())
     }
 }
 
@@ -294,10 +315,13 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let val_bytes = arg_as_bytes(&mut cx, 0)?;
-    let cursor = &mut &val_bytes[..];
-    let clarity_value = ClarityValue::consensus_deserialize(cursor)
-        .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
+    let (clarity_value, val_bytes) = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        let cursor = &mut &val_bytes[..];
+        let clarity_value = ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| Err(format!("Clarity parsing error: {}", e)))?;
+        Ok((clarity_value, val_bytes.to_vec()))
+    })
+    .or_else(|e| cx.throw_error(e))?;
 
     let include_abi_types_arg = cx.argument_opt(1);
     let include_abi_types = match include_abi_types_arg {
@@ -320,15 +344,18 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let val_bytes = arg_as_bytes(&mut cx, 0)?;
-    let cursor = &mut &val_bytes[..];
-    let clarity_value = ClarityValue::consensus_deserialize(cursor)
-        .or_else(|e| cx.throw_error(format!("Clarity parsing error: {}", e)))?;
+    let clarity_value = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        let cursor = &mut &val_bytes[..];
+        let clarity_value = ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| Err(format!("Clarity parsing error: {}", e)))?;
+        Ok(clarity_value)
+    })
+    .or_else(|e| cx.throw_error(e))?;
     Ok(cx.string(format!("{}", clarity_value)))
 }
 
 fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = arg_as_bytes(&mut cx, 0)?;
+    let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
     let resp_obj = cx.empty_object();
 
     // first byte is post condition mode
@@ -383,8 +410,12 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = arg_as_bytes(&mut cx, 0)?;
-    let result_length = u32::from_be_bytes(input_bytes[..4].try_into().unwrap());
+    let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
+    let result_length = if input_bytes.len() >= 4 {
+        u32::from_be_bytes(input_bytes[..4].try_into().unwrap())
+    } else {
+        0
+    };
     let array_result = JsArray::new(&mut cx, result_length);
 
     let include_abi_types_arg = cx.argument_opt(1);
@@ -395,26 +426,28 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
         None => false,
     };
 
-    let val_slice = &input_bytes[4..];
-    let mut byte_cursor = std::io::Cursor::new(val_slice);
-    let val_len = val_slice.len() as u64;
-    let mut i: u32 = 0;
-    while byte_cursor.position() < val_len - 1 {
-        let cur_start = byte_cursor.position() as usize;
-        let clarity_value = ClarityValue::consensus_deserialize(&mut byte_cursor)
-            .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
-        let cur_end = byte_cursor.position() as usize;
-        let value_slice = &val_slice[cur_start..cur_end];
-        let value_obj = cx.empty_object();
-        decode_clarity_val(
-            &mut cx,
-            &value_obj,
-            &clarity_value,
-            Some(value_slice),
-            include_abi_types,
-        )?;
-        array_result.set(&mut cx, i, value_obj)?;
-        i = i + 1;
+    if input_bytes.len() > 4 {
+        let val_slice = &input_bytes[4..];
+        let mut byte_cursor = std::io::Cursor::new(val_slice);
+        let val_len = val_slice.len() as u64;
+        let mut i: u32 = 0;
+        while byte_cursor.position() < val_len - 1 {
+            let cur_start = byte_cursor.position() as usize;
+            let clarity_value = ClarityValue::consensus_deserialize(&mut byte_cursor)
+                .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
+            let cur_end = byte_cursor.position() as usize;
+            let value_slice = &val_slice[cur_start..cur_end];
+            let value_obj = cx.empty_object();
+            decode_clarity_val(
+                &mut cx,
+                &value_obj,
+                &clarity_value,
+                Some(value_slice),
+                include_abi_types,
+            )?;
+            array_result.set(&mut cx, i, value_obj)?;
+            i = i + 1;
+        }
     }
     let resp_obj = cx.empty_object();
     let buffer = JsBuffer::external(&mut cx, input_bytes);
@@ -424,18 +457,21 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = arg_as_bytes(&mut cx, 0)?;
-    let byte_cursor = &mut &input_bytes[..];
-    let tx = StacksTransaction::consensus_deserialize(byte_cursor)
-        .or_else(|e| cx.throw_error(format!("Failed to decode transaction: {:?}\n", &e)))?;
+    let (tx, tx_id_bytes) = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        let cursor = &mut &val_bytes[..];
+        let tx = StacksTransaction::consensus_deserialize(cursor)
+            .or_else(|e| Err(format!("Failed to decode transaction: {:?}\n", &e)))?;
+        let tx_id_bytes = Sha512_256::digest(val_bytes);
+        Ok((tx, tx_id_bytes))
+    })
+    .or_else(|e| cx.throw_error(e))?;
+
     let tx_json_obj = cx.empty_object();
 
-    let tx_id_bytes = Sha512_256::digest(input_bytes);
     let tx_id = cx.string(encode_hex(tx_id_bytes));
     tx_json_obj.set(&mut cx, "tx_id", tx_id)?;
 
     tx.neon_js_serialize(&mut cx, &tx_json_obj, &())?;
-    // let tx_json = serde_json::to_string(&tx).or_else(|e| cx.throw_error(format!("Failed to serialize transaction to JSON: {}", e)))?;
     Ok(tx_json_obj)
 }
 
@@ -1084,18 +1120,6 @@ impl NeonJsSerialize<(), Vec<u8>> for StacksMicroblockHeader {
     }
 }
 
-fn get_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
-    let address_version = cx.argument::<JsNumber>(0)?.value(&mut cx);
-    let address_bytes_arg = arg_as_bytes(&mut cx, 1)?;
-    let hash160_bytes: [u8; 20] = address_bytes_arg
-        .try_into()
-        .or_else(|e| cx.throw_error(format!("Error converting to hash160 bytes: {:?}", e))?)?;
-    let address_hash160 = Hash160(hash160_bytes);
-    let stacks_address = StacksAddress::new(address_version as u8, address_hash160);
-    let stacks_address_string = cx.string(stacks_address.to_string());
-    return Ok(stacks_address_string);
-}
-
 fn is_valid_stacks_address(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let address_string = cx.argument::<JsString>(0)?.value(&mut cx);
     let address = c32_address_decode(&address_string);
@@ -1119,13 +1143,13 @@ fn decode_stacks_address(mut cx: FunctionContext) -> JsResult<JsArray> {
 
 fn stacks_address_from_parts(mut cx: FunctionContext) -> JsResult<JsString> {
     let version = cx.argument::<JsNumber>(0)?.value(&mut cx);
-    let hash160_arg = arg_as_bytes(&mut cx, 1)?;
-    let hash160 =
-        Hash160(hash160_arg.try_into().or_else(|e| {
-            cx.throw_error(format!("Error converting to hash160 bytes: {:?}", e))?
-        })?);
-    let stacks_address = StacksAddress::new(version as u8, hash160);
-    let resp = cx.string(stacks_address.to_string());
+    let stacks_address = arg_as_bytes(&mut cx, 1, |bytes| {
+        let addr = c32_address(version as u8, bytes)
+            .or_else(|e| Err(format!("Error converting to C32 address: {}", e)))?;
+        Ok(addr)
+    })
+    .or_else(|e| cx.throw_error(e)?)?;
+    let resp = cx.string(stacks_address);
     Ok(resp)
 }
 
@@ -1188,8 +1212,8 @@ fn memo_normalize<T: AsRef<[u8]>>(input: T) -> String {
 }
 
 fn memo_to_string(mut cx: FunctionContext) -> JsResult<JsString> {
-    let input_bytes = arg_as_bytes(&mut cx, 0)?;
-    let normalized = memo_normalize(input_bytes);
+    let normalized = arg_as_bytes(&mut cx, 0, |input_bytes| Ok(memo_normalize(input_bytes)))
+        .or_else(|e| cx.throw_error(e))?;
     let str_result = cx.string(normalized);
     Ok(str_result)
 }
@@ -1327,7 +1351,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
-    cx.export_function("getStacksAddress", get_stacks_address)?;
     cx.export_function("stacksToBitcoinAddress", stacks_to_bitcoin_address)?;
     cx.export_function("bitcoinToStacksAddress", from_bitcoin_address)?;
     cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;

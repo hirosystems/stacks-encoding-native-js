@@ -12,8 +12,6 @@ export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolea
 
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
-export function getStacksAddress(version: number, hash160: string | Buffer): string;
-
 export function stacksToBitcoinAddress(stackAddress: string): string;
 
 export function bitcoinToStacksAddress(bitcoinAddress: string): string;
