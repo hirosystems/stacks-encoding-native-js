@@ -19,7 +19,9 @@ use blockstack_lib::{
     types::{chainstate::StacksAddress, Address, StacksPublicKeyBuffer},
     vm::{
         analysis::contract_interface_builder::ContractInterfaceAtomType,
-        types::{CharType, PrincipalData, SequenceData, StandardPrincipalData},
+        types::{
+            serialization::TypePrefix, CharType, PrincipalData, SequenceData, StandardPrincipalData,
+        },
     },
 };
 use clarity::vm::types::{
@@ -69,28 +71,6 @@ fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
 
 fn encode_hex<T: AsRef<[u8]>>(data: T) -> String {
     format!("0x{}", hex::encode(data))
-}
-
-// Copied from non-public definition at
-// https://github.com/stacks-network/stacks-blockchain/blob/65570bbd8f6b2549e9b4d5bbe4c934538ec0cedc/clarity/src/vm/types/serialization.rs#L111
-#[repr(u8)]
-#[derive(Debug, Clone, PartialEq, Copy)]
-enum ClarityTypePrefix {
-    Int = 0,
-    UInt = 1,
-    Buffer = 2,
-    BoolTrue = 3,
-    BoolFalse = 4,
-    PrincipalStandard = 5,
-    PrincipalContract = 6,
-    ResponseOk = 7,
-    ResponseErr = 8,
-    OptionalNone = 9,
-    OptionalSome = 10,
-    List = 11,
-    Tuple = 12,
-    StringASCII = 13,
-    StringUTF8 = 14,
 }
 
 #[allow(dead_code)]
@@ -156,12 +136,24 @@ where
     }
 }
 
+fn set_type_id(
+    cx: &mut FunctionContext,
+    obj: &Handle<JsObject>,
+    clarity_val: &ClarityValue,
+) -> NeonResult<()> {
+    let type_prefix = TypePrefix::from(clarity_val).to_u8();
+    let type_id = cx.number(type_prefix);
+    obj.set(cx, "type_id", type_id)?;
+    Ok(())
+}
+
 fn decode_clarity_val(
     cx: &mut FunctionContext,
     cur_obj: &Handle<JsObject>,
     val: &ClarityValue,
     serialized_bytes: Option<&[u8]>,
     include_abi_type: bool,
+    deep: bool,
 ) -> NeonResult<()> {
     let type_signature = ClarityTypeSignature::type_of(&val);
 
@@ -183,6 +175,8 @@ fn decode_clarity_val(
         }
     }
 
+    set_type_id(cx, cur_obj, val)?;
+
     if include_abi_type {
         let abi_type = ContractInterfaceAtomType::from_type_signature(&type_signature);
         // TODO: this is silly and slow, should deserialize the ContractInterfaceAtomType object directly into Neon JsObject
@@ -194,123 +188,86 @@ fn decode_clarity_val(
 
     // TODO: is there a perfect overlap between stacks.js clarity json and contract ABI schema?
 
-    match val {
-        ClarityValue::Int(val) => {
-            let type_id = cx.number(ClarityTypePrefix::Int as u8);
-            cur_obj.set(cx, "type_id", type_id)?;
-            let val_string = cx.string(val.to_string());
-            cur_obj.set(cx, "value", val_string)?;
-        }
-        ClarityValue::UInt(val) => {
-            let type_id = cx.number(ClarityTypePrefix::UInt as u8);
-            cur_obj.set(cx, "type_id", type_id)?;
-            let val_string = cx.string(val.to_string());
-            cur_obj.set(cx, "value", val_string)?;
-        }
-        ClarityValue::Bool(val) => {
-            match val {
-                true => {
-                    let type_id = cx.number(ClarityTypePrefix::BoolTrue as u8);
-                    cur_obj.set(cx, "type_id", type_id)?
-                }
-                false => {
-                    let type_id = cx.number(ClarityTypePrefix::BoolFalse as u8);
-                    cur_obj.set(cx, "type_id", type_id)?
-                }
-            };
-        }
-        ClarityValue::Sequence(val) => match val {
-            SequenceData::Buffer(buff) => {
-                let type_id = cx.number(ClarityTypePrefix::Buffer as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-                let obj_buffer = JsBuffer::external(cx, buff.data.to_vec());
-                cur_obj.set(cx, "buffer", obj_buffer)?;
+    if deep {
+        match val {
+            ClarityValue::Int(val) => {
+                let val_string = cx.string(val.to_string());
+                cur_obj.set(cx, "value", val_string)?;
             }
-            SequenceData::List(list) => {
-                let type_id = cx.number(ClarityTypePrefix::List as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-                let list_obj = JsArray::new(cx, list.len());
-                for (i, x) in list.data.iter().enumerate() {
-                    let item_obj = cx.empty_object();
-                    decode_clarity_val(cx, &item_obj, x, None, include_abi_type)?;
-                    list_obj.set(cx, i as u32, item_obj)?;
-                }
-                cur_obj.set(cx, "list", list_obj)?;
+            ClarityValue::UInt(val) => {
+                let val_string = cx.string(val.to_string());
+                cur_obj.set(cx, "value", val_string)?;
             }
-            SequenceData::String(str) => match str {
-                CharType::ASCII(str_data) => {
-                    let type_id = cx.number(ClarityTypePrefix::StringASCII as u8);
-                    cur_obj.set(cx, "type_id", type_id)?;
-                    let data = cx.string(String::from_utf8_lossy(&str_data.data));
-                    cur_obj.set(cx, "data", data)?;
+            ClarityValue::Bool(val) => {
+                let val_boolean = cx.boolean(*val);
+                cur_obj.set(cx, "value", val_boolean)?;
+            }
+            ClarityValue::Sequence(val) => match val {
+                SequenceData::Buffer(buff) => {
+                    let obj_buffer = JsBuffer::external(cx, buff.data.to_vec());
+                    cur_obj.set(cx, "buffer", obj_buffer)?;
                 }
-                CharType::UTF8(str_data) => {
-                    let type_id = cx.number(ClarityTypePrefix::StringUTF8 as u8);
-                    cur_obj.set(cx, "type_id", type_id)?;
+                SequenceData::List(list) => {
+                    let list_obj = JsArray::new(cx, list.len());
+                    for (i, x) in list.data.iter().enumerate() {
+                        let item_obj = cx.empty_object();
+                        decode_clarity_val(cx, &item_obj, x, None, include_abi_type, deep)?;
+                        list_obj.set(cx, i as u32, item_obj)?;
+                    }
+                    cur_obj.set(cx, "list", list_obj)?;
+                }
+                SequenceData::String(str) => match str {
+                    CharType::ASCII(str_data) => {
+                        let data = cx.string(String::from_utf8_lossy(&str_data.data));
+                        cur_obj.set(cx, "data", data)?;
+                    }
+                    CharType::UTF8(str_data) => {
+                        let utf8_bytes: Vec<u8> = str_data.data.iter().cloned().flatten().collect();
+                        let utf8_str = String::from_utf8_lossy(&utf8_bytes);
+                        let data = cx.string(utf8_str);
+                        cur_obj.set(cx, "data", data)?;
+                    }
+                },
+            },
+            ClarityValue::Principal(val) => match val {
+                PrincipalData::Standard(standard_principal) => {
+                    standard_principal.neon_js_serialize(cx, cur_obj, &())?;
+                }
+                PrincipalData::Contract(contract_identifier) => {
+                    contract_identifier
+                        .issuer
+                        .neon_js_serialize(cx, cur_obj, &())?;
 
-                    let utf8_bytes: Vec<u8> = str_data.data.iter().cloned().flatten().collect();
-                    let utf8_str = String::from_utf8_lossy(&utf8_bytes);
-                    let data = cx.string(utf8_str);
-                    cur_obj.set(cx, "data", data)?;
+                    let contract_name = cx.string(contract_identifier.name.as_str());
+                    cur_obj.set(cx, "contract_name", contract_name)?;
                 }
             },
-        },
-        ClarityValue::Principal(val) => match val {
-            PrincipalData::Standard(standard_principal) => {
-                let type_id = cx.number(ClarityTypePrefix::PrincipalStandard as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-
-                standard_principal.neon_js_serialize(cx, cur_obj, &())?;
+            ClarityValue::Tuple(val) => {
+                let tuple_obj = cx.empty_object();
+                for (key, value) in val.data_map.iter() {
+                    let val_obj = cx.empty_object();
+                    decode_clarity_val(cx, &val_obj, value, None, include_abi_type, deep)?;
+                    tuple_obj.set(cx, key.as_str(), val_obj)?;
+                }
+                cur_obj.set(cx, "data", tuple_obj)?;
             }
-            PrincipalData::Contract(contract_identifier) => {
-                let type_id = cx.number(ClarityTypePrefix::PrincipalContract as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-
-                contract_identifier
-                    .issuer
-                    .neon_js_serialize(cx, cur_obj, &())?;
-
-                let contract_name = cx.string(contract_identifier.name.as_str());
-                cur_obj.set(cx, "contract_name", contract_name)?;
+            ClarityValue::Optional(val) => match &val.data {
+                Some(data) => {
+                    let option_obj = cx.empty_object();
+                    decode_clarity_val(cx, &option_obj, &data, None, include_abi_type, deep)?;
+                    cur_obj.set(cx, "value", option_obj)?;
+                }
+                None => {
+                    // Implicit
+                }
+            },
+            ClarityValue::Response(val) => {
+                let response_obj = cx.empty_object();
+                decode_clarity_val(cx, &response_obj, &val.data, None, include_abi_type, deep)?;
+                cur_obj.set(cx, "value", response_obj)?;
             }
-        },
-        ClarityValue::Tuple(val) => {
-            let type_id = cx.number(ClarityTypePrefix::Tuple as u8);
-            cur_obj.set(cx, "type_id", type_id)?;
-            let tuple_obj = cx.empty_object();
-            for (key, value) in val.data_map.iter() {
-                let val_obj = cx.empty_object();
-                decode_clarity_val(cx, &val_obj, value, None, include_abi_type)?;
-                tuple_obj.set(cx, key.as_str(), val_obj)?;
-            }
-            cur_obj.set(cx, "data", tuple_obj)?;
-        }
-        ClarityValue::Optional(val) => match &val.data {
-            Some(data) => {
-                let type_id = cx.number(ClarityTypePrefix::OptionalSome as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-                let option_obj = cx.empty_object();
-                decode_clarity_val(cx, &option_obj, &data, None, include_abi_type)?;
-                cur_obj.set(cx, "value", option_obj)?;
-            }
-            None => {
-                let type_id = cx.number(ClarityTypePrefix::OptionalNone as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-            }
-        },
-        ClarityValue::Response(val) => {
-            if val.committed {
-                let type_id = cx.number(ClarityTypePrefix::ResponseOk as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-            } else {
-                let type_id = cx.number(ClarityTypePrefix::ResponseErr as u8);
-                cur_obj.set(cx, "type_id", type_id)?;
-            }
-            let response_obj = cx.empty_object();
-            decode_clarity_val(cx, &response_obj, &val.data, None, include_abi_type)?;
-            cur_obj.set(cx, "value", response_obj)?;
-        }
-    };
+        };
+    }
     Ok(())
 }
 
@@ -338,6 +295,7 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
         &clarity_value,
         Some(&val_bytes),
         include_abi_types,
+        true,
     )?;
 
     return Ok(root_obj);
@@ -411,15 +369,23 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
     let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
+
     let result_length = if input_bytes.len() >= 4 {
         u32::from_be_bytes(input_bytes[..4].try_into().unwrap())
     } else {
         0
     };
+
     let array_result = JsArray::new(&mut cx, result_length);
 
-    let include_abi_types_arg = cx.argument_opt(1);
-    let include_abi_types = match include_abi_types_arg {
+    let include_abi_types = match cx.argument_opt(1) {
+        Some(arg) => arg
+            .downcast_or_throw::<JsBoolean, _>(&mut cx)?
+            .value(&mut cx),
+        None => false,
+    };
+
+    let deep: bool = match cx.argument_opt(2) {
         Some(arg) => arg
             .downcast_or_throw::<JsBoolean, _>(&mut cx)?
             .value(&mut cx),
@@ -444,6 +410,7 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
                 &clarity_value,
                 Some(value_slice),
                 include_abi_types,
+                deep,
             )?;
             array_result.set(&mut cx, i, value_obj)?;
             i = i + 1;
@@ -787,7 +754,11 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 obj.set(cx, "asset", asset_info_obj)?;
 
                 let asset_value_obj = cx.empty_object();
-                asset_value.neon_js_serialize(cx, &asset_value_obj, extra_ctx)?;
+                asset_value.neon_js_serialize(
+                    cx,
+                    &asset_value_obj,
+                    &ClarityValueSerializeCtx { deep: false },
+                )?;
                 obj.set(cx, "asset_value", asset_value_obj)?;
 
                 nonfungible_condition.neon_js_serialize(cx, obj, extra_ctx)?;
@@ -890,17 +861,21 @@ impl NeonJsSerialize for AssetInfo {
     }
 }
 
-impl NeonJsSerialize<(), Vec<u8>> for ClarityValue {
+struct ClarityValueSerializeCtx {
+    deep: bool,
+}
+
+impl NeonJsSerialize<ClarityValueSerializeCtx, Vec<u8>> for ClarityValue {
     fn neon_js_serialize(
         &self,
         cx: &mut FunctionContext,
         obj: &Handle<JsObject>,
-        _extra_ctx: &(),
+        extra_ctx: &ClarityValueSerializeCtx,
     ) -> NeonResult<Vec<u8>> {
         // TODO: raw clarity value binary slice is already determined during deserialization, ideally
         // try to use that rather than re-serializing (slow)
         let value_bytes = ClarityValue::serialize_to_vec(&self);
-        decode_clarity_val(cx, obj, self, Some(&value_bytes), false)?;
+        decode_clarity_val(cx, obj, self, Some(&value_bytes), false, extra_ctx.deep)?;
         Ok(value_bytes)
     }
 }
@@ -975,14 +950,14 @@ impl NeonJsSerialize for PrincipalData {
     ) -> NeonResult<()> {
         match self {
             PrincipalData::Standard(standard_principal) => {
-                let type_int = ClarityTypePrefix::PrincipalStandard as u8;
-                let type_id = cx.number(type_int);
+                let type_prefix = TypePrefix::PrincipalStandard.to_u8();
+                let type_id = cx.number(type_prefix);
                 obj.set(cx, "type_id", type_id)?;
                 standard_principal.neon_js_serialize(cx, obj, extra_ctx)?;
             }
             PrincipalData::Contract(contract_identifier) => {
-                let type_int = ClarityTypePrefix::PrincipalContract as u8;
-                let type_id = cx.number(type_int);
+                let type_prefix = TypePrefix::PrincipalContract.to_u8();
+                let type_id = cx.number(type_prefix);
                 obj.set(cx, "type_id", type_id)?;
 
                 let contract_name = cx.string(contract_identifier.name.as_str());
@@ -1058,7 +1033,8 @@ impl NeonJsSerialize for TransactionContractCall {
         let function_args = JsArray::new(cx, self.function_args.len() as u32);
         for (i, x) in self.function_args.iter().enumerate() {
             let val_obj = cx.empty_object();
-            let mut val_bytes = x.neon_js_serialize(cx, &val_obj, extra_ctx)?;
+            let mut val_bytes =
+                x.neon_js_serialize(cx, &val_obj, &ClarityValueSerializeCtx { deep: false })?;
             function_args_raw.append(&mut val_bytes);
             function_args.set(cx, i as u32, val_obj)?;
         }

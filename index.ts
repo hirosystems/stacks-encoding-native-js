@@ -338,10 +338,12 @@ export interface ClarityValueUInt {
 
 export interface ClarityValueBoolTrue {
     type_id: ClarityTypeID.BoolTrue;
+    value: true;
 }
 
 export interface ClarityValueBoolFalse {
     type_id: ClarityTypeID.BoolFalse;
+    value: false;
 }
 
 export interface ClarityValueBuffer {
