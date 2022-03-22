@@ -1322,12 +1322,12 @@ mod tests {
     }
 }
 
-#[cfg(feature = "profiler")]
+#[cfg(feature = "profiling")]
 lazy_static! {
     static ref PROFILER: Mutex<Option<pprof::ProfilerGuard<'static>>> = Mutex::new(None);
 }
 
-#[cfg(feature = "profiler")]
+#[cfg(feature = "profiling")]
 fn start_profiler(mut cx: FunctionContext) -> JsResult<JsString> {
     let mut profiler = PROFILER
         .lock()
@@ -1342,7 +1342,7 @@ fn start_profiler(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(res)
 }
 
-#[cfg(feature = "profiler")]
+#[cfg(feature = "profiling")]
 fn create_profiler(mut cx: FunctionContext) -> JsResult<JsFunction> {
     let profiler_guard = pprof::ProfilerGuard::new(100)
         .or_else(|e| cx.throw_error(format!("Failed to create profiler guard: {}", e))?)?;
@@ -1365,9 +1365,11 @@ fn create_profiler(mut cx: FunctionContext) -> JsResult<JsFunction> {
     })
 }
 
-#[cfg(feature = "profiler")]
+#[cfg(feature = "profiling")]
 fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
-    let mut profiler = PROFILER.lock().unwrap();
+    let mut profiler = PROFILER
+        .lock()
+        .or_else(|e| cx.throw_error(format!("Failed to aquire lock: {}", e))?)?;
     let report_result = match &*profiler {
         None => cx.throw_error("No profiler started")?,
         Some(profiler) => profiler.report().build(),
@@ -1378,7 +1380,9 @@ fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     };
 
     let mut buf = Vec::new();
-    report.flamegraph(&mut buf).unwrap();
+    report
+        .flamegraph(&mut buf)
+        .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
 
     *profiler = None;
 
@@ -1401,7 +1405,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("stacksAddressFromParts", stacks_address_from_parts)?;
     cx.export_function("memoToString", memo_to_string)?;
 
-    #[cfg(feature = "profiler")]
+    #[cfg(feature = "profiling")]
     {
         cx.export_function("startProfiler", start_profiler)?;
         cx.export_function("stopProfiler", stop_profiler)?;

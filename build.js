@@ -8,6 +8,9 @@ const path = require('path');
 const fs = require('fs');
 const cargoCpArtifact = require('cargo-cp-artifact');
 
+const isDevBuild = process.argv[2] === 'dev';
+console.log(`IS DEV BUILD: ${isDevBuild}`);
+
 const targetMap = {
   'darwin-x64': ['darwin-x64.node', 'x86_64-apple-darwin'],
   'darwin-arm64': ['darwin-arm64.node', 'aarch64-apple-darwin'],
@@ -45,9 +48,14 @@ let runArgs = [
   'cargo',
   'build',
   '--message-format=json-render-diagnostics',
-  '--release',
   '--target', cargoTarget
 ];
+
+if (isDevBuild) {
+  runArgs.push('--profile=release-dev', '--features=profiling');
+} else {
+  runArgs.push('--release')
+}
 
 console.log(`Building target: ${cargoTarget}`);
 console.log(`Building artifact: ${outputFilePath}`);

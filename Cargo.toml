@@ -6,6 +6,13 @@ edition = "2018"
 exclude = ["index.node"]
 resolver = "2"
 
+[profile.release]
+lto = true
+
+[profile.release-dev]
+inherits = "release"
+debug = true
+
 [lib]
 crate-type = ["cdylib"]
 
