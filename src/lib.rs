@@ -34,7 +34,10 @@ use neon::{prelude::*, types::buffer::TypedArray};
 use regex::Regex;
 use sha2::{Digest, Sha512_256};
 use stacks_common::codec::StacksMessageCodec;
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    sync::Mutex,
+};
 use unicode_segmentation::UnicodeSegmentation;
 
 mod unicode_printable;
@@ -74,7 +77,7 @@ fn encode_hex<T: AsRef<[u8]>>(data: T) -> String {
 }
 
 #[allow(dead_code)]
-fn console_log<S: AsRef<str>>(cx: &mut FunctionContext, msg: S) -> NeonResult<()> {
+fn console_log<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<()> {
     let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
     let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
     log_fn
@@ -1319,6 +1322,70 @@ mod tests {
     }
 }
 
+#[cfg(feature = "profiler")]
+lazy_static! {
+    static ref PROFILER: Mutex<Option<pprof::ProfilerGuard<'static>>> = Mutex::new(None);
+}
+
+#[cfg(feature = "profiler")]
+fn start_profiler(mut cx: FunctionContext) -> JsResult<JsString> {
+    let mut profiler = PROFILER
+        .lock()
+        .or_else(|e| cx.throw_error(format!("Failed to aquire lock: {}", e))?)?;
+    if profiler.is_some() {
+        cx.throw_error("Profiler already started")?;
+    }
+    let profiler_guard = pprof::ProfilerGuard::new(100)
+        .or_else(|e| cx.throw_error(format!("Failed to create profiler guard: {}", e))?)?;
+    *profiler = Some(profiler_guard);
+    let res = cx.string("Profiler started");
+    Ok(res)
+}
+
+#[cfg(feature = "profiler")]
+fn create_profiler(mut cx: FunctionContext) -> JsResult<JsFunction> {
+    let profiler_guard = pprof::ProfilerGuard::new(100)
+        .or_else(|e| cx.throw_error(format!("Failed to create profiler guard: {}", e))?)?;
+    let profiler_cell = std::cell::RefCell::new(profiler_guard);
+    JsFunction::new(&mut cx, move |mut cx| {
+        let profiler = profiler_cell.borrow_mut();
+        let report = match profiler.report().build() {
+            Ok(report) => report,
+            Err(err) => cx.throw_error(format!("Error generating report: {}", err))?,
+        };
+        // let report_str = format!("{:?}", report);
+        // Ok(cx.string(report_str))
+
+        let mut buf = Vec::new();
+        report
+            .flamegraph(&mut buf)
+            .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
+        let result = JsBuffer::external(&mut cx, buf);
+        Ok(result)
+    })
+}
+
+#[cfg(feature = "profiler")]
+fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let mut profiler = PROFILER.lock().unwrap();
+    let report_result = match &*profiler {
+        None => cx.throw_error("No profiler started")?,
+        Some(profiler) => profiler.report().build(),
+    };
+    let report = match report_result {
+        Ok(report) => report,
+        Err(err) => cx.throw_error(format!("Error generating report: {}", err))?,
+    };
+
+    let mut buf = Vec::new();
+    report.flamegraph(&mut buf).unwrap();
+
+    *profiler = None;
+
+    let result = JsBuffer::external(&mut cx, buf);
+    Ok(result)
+}
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("getVersion", get_version)?;
@@ -1333,5 +1400,13 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeStacksAddress", decode_stacks_address)?;
     cx.export_function("stacksAddressFromParts", stacks_address_from_parts)?;
     cx.export_function("memoToString", memo_to_string)?;
+
+    #[cfg(feature = "profiler")]
+    {
+        cx.export_function("startProfiler", start_profiler)?;
+        cx.export_function("stopProfiler", stop_profiler)?;
+        cx.export_function("createProfiler", create_profiler)?;
+    }
+
     Ok(())
 }

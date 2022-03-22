@@ -25,6 +25,15 @@ git-version = "0.3.5"
 lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
 
+[dependencies.pprof]
+# git = "https://github.com/YangKeao/pprof-rs"
+# branch = "nongu-unwind"
+# features = ["nongnu-libunwind", "flamegraph"]
+git = "https://github.com/mornyx/pprof-rs"
+branch = "unwind"
+features = ["flamegraph"]
+optional = true
+
 [target.'cfg(all(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"), not(target_env = "msvc")))'.dependencies]
 sha2 = { version = "0.10", features = ["asm"] }
 
@@ -37,3 +46,6 @@ version = "0.10.0"
 # rev = "bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 default-features = false
 features = ["napi-6"]
+
+[features]
+profiling = ["pprof"]

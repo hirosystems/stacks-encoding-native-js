@@ -32,3 +32,9 @@ export function decodeStacksAddress(address: string): [version: number, hash160:
 export function stacksAddressFromParts(version: number, hash160: string | Buffer): string;
 
 export function memoToString(memo: string | Buffer): string;
+
+export function startProfiler(): string;
+
+export function stopProfiler(): Buffer;
+
+export function createProfiler(): () => Buffer;
