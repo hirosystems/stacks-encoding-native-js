@@ -6,6 +6,8 @@ export function decodeTransaction(arg: string | Buffer): DecodedTxResult;
 
 export function decodeClarityValueToRepr(arg: string | Buffer): string;
 
+export function decodeClarityValueToTypeName(arg: string | Buffer): string;
+
 export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityValue>(arg: string | Buffer, includeAbi?: boolean): T;
 
 /**

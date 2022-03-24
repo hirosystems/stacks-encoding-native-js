@@ -418,8 +418,9 @@ export type ClarityValue =
     | ClarityValueResponseError;
 
 export interface ParsedClarityValueInfo {
+    // type_id: ClarityTypeID;
     /** Type signature */
-    type: string;
+    // type: string;
     /** Clarity repr value */
     repr: string;
     /** Hex encoded string of the serialized Clarity value */

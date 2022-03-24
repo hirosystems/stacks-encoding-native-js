@@ -169,11 +169,6 @@ fn decode_clarity_val(
     include_abi_type: bool,
     deep: bool,
 ) -> NeonResult<()> {
-    let type_signature = ClarityTypeSignature::type_of(&val);
-
-    let type_string = cx.string(type_signature.to_string());
-    cur_obj.set(cx, "type", type_string)?;
-
     let repr_string = cx.string(val.to_string());
     cur_obj.set(cx, "repr", repr_string)?;
 
@@ -313,6 +308,18 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
     )?;
 
     return Ok(root_obj);
+}
+
+fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString> {
+    let clarity_value = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        let cursor = &mut &val_bytes[..];
+        let clarity_value = ClarityValue::consensus_deserialize(cursor)
+            .or_else(|e| Err(format!("Clarity parsing error: {}", e)))?;
+        Ok(clarity_value)
+    })
+    .or_else(|e| cx.throw_error(e))?;
+    let type_signature = ClarityTypeSignature::type_of(&clarity_value);
+    Ok(cx.string(type_signature.to_string()))
 }
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -1409,6 +1416,10 @@ fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("getVersion", get_version)?;
     cx.export_function("decodeClarityValueToRepr", decode_clarity_value_to_repr)?;
+    cx.export_function(
+        "decodeClarityValueToTypeName",
+        decode_clarity_value_type_name,
+    )?;
     cx.export_function("decodeClarityValue", decode_clarity_value)?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
