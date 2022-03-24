@@ -187,6 +187,7 @@ fn decode_clarity_val(
     set_type_id(cx, cur_obj, val)?;
 
     if include_abi_type {
+        let type_signature = ClarityTypeSignature::type_of(&val);
         let abi_type = ContractInterfaceAtomType::from_type_signature(&type_signature);
         // TODO: this is silly and slow, should deserialize the ContractInterfaceAtomType object directly into Neon JsObject
         let abi_json =
