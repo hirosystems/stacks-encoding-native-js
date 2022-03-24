@@ -3,13 +3,6 @@ export * from './loader';
 export const StacksNativeEncodingBindings = bindings;
 export default StacksNativeEncodingBindings;
 
-export interface DecodedClarityValueListResult {
-    /** Byte span for the given serialized Clarity value list (u32be length-prefixed) */
-    buffer: Buffer;
-    /** Deserialized Clarity values */
-    array: ParsedClarityValue[];
-}
-
 export type TxPostCondition = PostConditionStx | PostConditionFungible | PostConditionNonfungible;
 
 export interface DecodedPostConditionsResult {

@@ -28,7 +28,6 @@ use clarity::vm::types::{
     signatures::TypeSignature as ClarityTypeSignature, Value as ClarityValue,
 };
 use git_version::git_version;
-use hex::{FromHex, FromHexError};
 use lazy_static::lazy_static;
 use neon::{prelude::*, types::buffer::TypedArray};
 use regex::Regex;
@@ -64,16 +63,28 @@ fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(version)
 }
 
-fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, FromHexError> {
+fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Box<[u8]>, hex_simd::Error> {
     if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
-        FromHex::from_hex(&data.as_ref()[2..])
+        hex_simd::decode_to_boxed_bytes(&data.as_ref()[2..])
     } else {
-        FromHex::from_hex(data)
+        hex_simd::decode_to_boxed_bytes(&data.as_ref())
     }
 }
 
-fn encode_hex<T: AsRef<[u8]>>(data: T) -> String {
-    format!("0x{}", hex::encode(data))
+fn encode_hex(data: &[u8]) -> Box<str> {
+    let mut uninit_buf = unsafe { simd_abstraction::tools::alloc_uninit_bytes(data.len() * 2 + 2) };
+    let uninit_slice = &mut *uninit_buf;
+    uninit_slice[0].write(b'0');
+    uninit_slice[1].write(b'x');
+    let dest_buf = hex_simd::OutBuf::from_uninit_mut(&mut uninit_slice[2..]);
+    hex_simd::encode(data, dest_buf, hex_simd::AsciiCase::Lower).unwrap();
+
+    let len = uninit_buf.len();
+    let ptr = Box::into_raw(uninit_buf).cast::<u8>();
+    unsafe {
+        let buf = core::slice::from_raw_parts_mut(ptr, len);
+        Box::from_raw(core::str::from_utf8_unchecked_mut(buf))
+    }
 }
 
 #[allow(dead_code)]
@@ -105,7 +116,7 @@ fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
     Ok(result)
 }
 
-fn arg_as_bytes_copied(cx: &mut FunctionContext, arg_index: i32) -> NeonResult<Vec<u8>> {
+fn arg_as_bytes_copied(cx: &mut FunctionContext, arg_index: i32) -> NeonResult<Box<[u8]>> {
     let input_arg: Handle<JsValue> = cx.argument(arg_index)?;
     if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
         let val_bytes = decode_hex(handle.value(cx))
@@ -113,7 +124,7 @@ fn arg_as_bytes_copied(cx: &mut FunctionContext, arg_index: i32) -> NeonResult<V
         Ok(val_bytes)
     } else if let Ok(handle) = input_arg.downcast::<JsBuffer, _>(cx) {
         let slice = handle.as_slice(cx);
-        let val_bytes: Vec<u8> = slice.into();
+        let val_bytes: Box<[u8]> = slice.into();
         Ok(val_bytes)
     } else {
         cx.throw_error("Argument must be a hex string or a Buffer")
@@ -173,7 +184,7 @@ fn decode_clarity_val(
         }
         None => {
             let bytes = ClarityValue::serialize_to_vec(&val);
-            let hex = cx.string(encode_hex(bytes));
+            let hex = cx.string(encode_hex(&bytes));
             cur_obj.set(cx, "hex", hex)?;
         }
     }
@@ -370,7 +381,7 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(resp_obj)
 }
 
-fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
+fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
 
     let result_length = if input_bytes.len() >= 4 {
@@ -419,11 +430,7 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsObject> {
             i = i + 1;
         }
     }
-    let resp_obj = cx.empty_object();
-    let buffer = JsBuffer::external(&mut cx, input_bytes);
-    resp_obj.set(&mut cx, "buffer", buffer)?;
-    resp_obj.set(&mut cx, "array", array_result)?;
-    Ok(resp_obj)
+    Ok(array_result)
 }
 
 fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -438,7 +445,7 @@ fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
 
     let tx_json_obj = cx.empty_object();
 
-    let tx_id = cx.string(encode_hex(tx_id_bytes));
+    let tx_id = cx.string(encode_hex(&tx_id_bytes));
     tx_json_obj.set(&mut cx, "tx_id", tx_id)?;
 
     tx.neon_js_serialize(&mut cx, &tx_json_obj, &())?;
@@ -575,7 +582,7 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(encode_hex(&self.signer));
+        let signer = cx.string(encode_hex(self.signer.as_bytes()));
         obj.set(cx, "signer", signer)?;
 
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
@@ -599,7 +606,7 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let key_encoding = cx.number(self.key_encoding as u8);
         obj.set(cx, "key_encoding", key_encoding)?;
 
-        let signature = cx.string(encode_hex(&self.signature));
+        let signature = cx.string(encode_hex(self.signature.as_bytes()));
         obj.set(cx, "signature", signature)?;
 
         Ok(())
@@ -617,7 +624,7 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(encode_hex(&self.signer));
+        let signer = cx.string(encode_hex(self.signer.as_bytes()));
         obj.set(cx, "signer", signer)?;
 
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
@@ -671,7 +678,7 @@ impl NeonJsSerialize for TransactionAuthField {
                 obj.set(cx, "type_id", type_id)?;
 
                 let pubkey_buf = StacksPublicKeyBuffer::from_public_key(pubkey);
-                let pubkey_hex = cx.string(encode_hex(pubkey_buf));
+                let pubkey_hex = cx.string(encode_hex(pubkey_buf.as_bytes()));
                 obj.set(cx, "public_key", pubkey_hex)?;
 
                 // TODO: add stacks-address encoded format
@@ -686,7 +693,7 @@ impl NeonJsSerialize for TransactionAuthField {
                 let type_id = cx.number(field_id as u8);
                 obj.set(cx, "type_id", type_id)?;
 
-                let pubkey_hex = cx.string(encode_hex(sig));
+                let pubkey_hex = cx.string(encode_hex(sig.as_bytes()));
                 obj.set(cx, "signature", pubkey_hex)?;
             }
         }
@@ -902,7 +909,7 @@ impl NeonJsSerialize for TransactionPayload {
                 let amount_str = cx.string(amount.to_string());
                 obj.set(cx, "amount", amount_str)?;
 
-                let memo_hex = cx.string(encode_hex(memo));
+                let memo_hex = cx.string(encode_hex(memo.as_bytes()));
                 obj.set(cx, "memo_hex", memo_hex)?;
 
                 let memo_hex = JsBuffer::external(cx, memo.to_bytes());
@@ -1200,6 +1207,14 @@ fn memo_to_string(mut cx: FunctionContext) -> JsResult<JsString> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_hex_encode() {
+        let input = b"hello world";
+        let hex_str = encode_hex(input);
+        let repr = hex_str.to_string();
+        assert_eq!(repr, "0x68656c6c6f20776f726c64");
+    }
 
     #[test]
     fn test_memo_decode_whitespace() {

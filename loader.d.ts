@@ -1,4 +1,4 @@
-import type { DecodedClarityValueListResult, DecodedPostConditionsResult, DecodedTxResult, ParsedClarityValue } from ".";
+import type { DecodedPostConditionsResult, DecodedTxResult, ParsedClarityValue } from ".";
 
 export function getVersion(): string;
 
@@ -17,7 +17,7 @@ export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityV
  * not contain decoded children.
  * TODO: fix the clarity result type definition to be more accurate.
  */
-export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean, deep?: false): DecodedClarityValueListResult;
+export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean, deep?: false): ParsedClarityValue[];
 
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
