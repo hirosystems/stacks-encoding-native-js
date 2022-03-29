@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "perf-tests:decode-contract-call-args",
+            "type": "pwa-node",
+            "request": "launch",
+            "runtimeArgs": ["--expose-gc"],
+            "skipFiles": ["<node_internals>/**"],
+            "program": "${workspaceFolder}/perf-tests/decode-contract-call-args/test.js",
+            "outFiles": ["${workspaceFolder}/**/*.js"]
+        }
+    ]
+}
