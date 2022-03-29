@@ -9,7 +9,8 @@
     "build": "npm run build-ts && npm run build-cargo",
     "build:dev": "npm run build-ts && npm run build-cargo -- dev",
     "test": "cargo test",
-    "perf-test:contract-call-args": "node --expose-gc perf-tests/decode-contract-call-args/test.js"
+    "perf-test:contract-call-args": "node --expose-gc perf-tests/decode-contract-call-args/test.js",
+    "perf-test:decode-post-conditions": "node --expose-gc perf-tests/decode-post-conditions/test.js"
   },
   "author": "Matthew Little",
   "license": "GPL-3.0",
