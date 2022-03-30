@@ -29,7 +29,7 @@ for (let i = 0; i < rounds; i++) {
     }
 }
 
-const elapsed = Math.round((Date.now() - startTime) / 100) / 100;
+const elapsed = Math.round((Date.now() - startTime) / 10) / 100;
 const profile = sen.stopProfiler();
 
 const outputFile = path.join(__dirname, 'results', `profile-${Date.now()}-${elapsed}s.svg`);
