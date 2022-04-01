@@ -1,8 +1,7 @@
-use super::signatures::*;
 use super::types::*;
 use std::convert::TryFrom;
 use std::fmt::Display;
-use std::io::{Read, Write};
+use std::io::Read;
 
 pub struct DeserializeError(pub String);
 
@@ -45,7 +44,7 @@ macro_rules! define_u8_enum {
             $($Variant = $Val),*,
         }
         impl $Name {
-            pub const ALL: &'static [$Name] = &[$($Name::$Variant),*];
+            // pub const ALL: &'static [$Name] = &[$($Name::$Variant),*];
 
             pub fn to_u8(&self) -> u8 {
                 match self {
@@ -88,12 +87,12 @@ define_u8_enum!(TypePrefix {
 macro_rules! serialize_guarded_string {
     ($Name:ident) => {
         impl $Name {
+            /*
             fn serialize_write<W: Write>(&self, w: &mut W) -> std::io::Result<()> {
                 w.write_all(&self.len().to_be_bytes())?;
-                // self.as_bytes() is always len bytes, because this is only used for GuardedStrings
-                //   which are a subset of ASCII
                 w.write_all(self.as_str().as_bytes())
             }
+            */
 
             fn deserialize_read<R: Read>(r: &mut R) -> Result<Self, DeserializeError> {
                 let mut len = [0; 1];
@@ -118,10 +117,12 @@ serialize_guarded_string!(ClarityName);
 serialize_guarded_string!(ContractName);
 
 impl StandardPrincipalData {
+    /*
     fn serialize_write<W: Write>(&self, w: &mut W) -> std::io::Result<()> {
         w.write_all(&[self.0])?;
         w.write_all(&self.1)
     }
+    */
 
     fn deserialize_read<R: Read>(r: &mut R) -> Result<Self, DeserializeError> {
         let mut version = [0; 1];
@@ -129,42 +130,6 @@ impl StandardPrincipalData {
         r.read_exact(&mut version)?;
         r.read_exact(&mut data)?;
         Ok(StandardPrincipalData(version[0], data))
-    }
-}
-
-pub trait ClarityValueSerDer {
-    /*
-    fn consensus_serialize<W: Write>(&self, fd: &mut W) -> Result<(), String>
-    where
-        Self: Sized;
-    */
-
-    fn consensus_deserialize<R: Read>(fd: &mut R) -> Result<Self, DeserializeError>
-    where
-        Self: Sized;
-
-    /*
-    fn serialize_to_vec(&self) -> Vec<u8>
-    where
-        Self: Sized,
-    {
-        let mut bytes = vec![];
-        self.consensus_serialize(&mut bytes)
-            .expect("BUG: serialization to buffer failed.");
-        bytes
-    }
-    */
-}
-
-impl ClarityValueSerDer for Value {
-    /*
-    fn consensus_serialize<W: Write>(&self, fd: &mut W) -> Result<(), String> {
-        self.serialize_write(fd).map_err(|e| format!("Failed to encode clarity value: {:?}", &e))
-    }
-    */
-
-    fn consensus_deserialize<R: Read>(fd: &mut R) -> Result<Value, DeserializeError> {
-        Value::deserialize_read(fd)
     }
 }
 
@@ -199,23 +164,27 @@ impl Value {
             TypePrefix::Buffer => {
                 let mut buffer_len = [0; 4];
                 r.read_exact(&mut buffer_len)?;
-                let buffer_len = BufferLength::try_from(u32::from_be_bytes(buffer_len))?;
-                let mut data = vec![0; u32::from(buffer_len) as usize];
+                let buffer_len = u32::from_be_bytes(buffer_len);
+                if buffer_len > MAX_VALUE_SIZE {
+                    return Err("Illegal buffer type size".into());
+                }
+                let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                Ok(Value::buff_from(data))
+                Ok(Value::buff(data))
             }
             TypePrefix::BoolTrue => Ok(Bool(true)),
             TypePrefix::BoolFalse => Ok(Bool(false)),
             TypePrefix::PrincipalStandard => {
                 let principal = StandardPrincipalData::deserialize_read(r)?;
-                Ok(Value::Principal(PrincipalData::Standard(principal)))
+                Ok(Value::PrincipalStandard(principal))
             }
             TypePrefix::PrincipalContract => {
                 let issuer = StandardPrincipalData::deserialize_read(r)?;
                 let name = ContractName::deserialize_read(r)?;
-                Ok(Value::Principal(PrincipalData::Contract(
-                    QualifiedContractIdentifier { issuer, name },
-                )))
+                Ok(Value::PrincipalContract(QualifiedContractIdentifier {
+                    issuer,
+                    name,
+                }))
             }
             TypePrefix::ResponseOk | TypePrefix::ResponseErr => {
                 let committed = prefix == TypePrefix::ResponseOk;
@@ -237,45 +206,50 @@ impl Value {
                 r.read_exact(&mut len)?;
                 let len = u32::from_be_bytes(len);
                 if len > MAX_VALUE_SIZE {
-                    return Err("Illegal list type".into());
+                    return Err("Illegal list type size".into());
                 }
                 let mut items = Vec::with_capacity(len as usize);
                 for _i in 0..len {
                     items.push(Value::inner_deserialize_read(r, depth + 1)?);
                 }
-                Ok(Value::list_from(items))
+                Ok(Value::list(items))
             }
             TypePrefix::Tuple => {
                 let mut len = [0; 4];
                 r.read_exact(&mut len)?;
                 let len = u32::from_be_bytes(len);
                 if len > MAX_VALUE_SIZE {
-                    return Err("Illegal tuple type".into());
+                    return Err("Illegal tuple type size".into());
                 }
                 let mut items = Vec::with_capacity(len as usize);
                 for _i in 0..len {
                     let key = ClarityName::deserialize_read(r)?;
-
                     let value = Value::inner_deserialize_read(r, depth + 1)?;
                     items.push((key, value))
                 }
-                Ok(Value::tuple_from_data(items))
+                Ok(Value::tuple(items))
             }
             TypePrefix::StringASCII => {
                 let mut buffer_len = [0; 4];
                 r.read_exact(&mut buffer_len)?;
-                let buffer_len = BufferLength::try_from(u32::from_be_bytes(buffer_len))?;
-                let mut data = vec![0; u32::from(buffer_len) as usize];
+                let buffer_len = u32::from_be_bytes(buffer_len);
+                if buffer_len > MAX_VALUE_SIZE {
+                    return Err("Illegal string-ascii type size".into());
+                }
+                let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                Ok(Value::string_ascii_from_bytes(data))
+                Ok(Value::string_ascii(data))
             }
             TypePrefix::StringUTF8 => {
                 let mut total_len = [0; 4];
                 r.read_exact(&mut total_len)?;
-                let total_len = BufferLength::try_from(u32::from_be_bytes(total_len))?;
-                let mut data: Vec<u8> = vec![0; u32::from(total_len) as usize];
+                let total_len = u32::from_be_bytes(total_len);
+                if total_len > MAX_VALUE_SIZE {
+                    return Err("Illegal string-utf8 type size".into());
+                }
+                let mut data: Vec<u8> = vec![0; total_len as usize];
                 r.read_exact(&mut data[..])?;
-                Ok(Value::string_utf8_from_bytes(data))
+                Ok(Value::string_utf8(data))
             }
         }
     }

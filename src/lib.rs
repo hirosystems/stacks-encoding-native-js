@@ -175,8 +175,6 @@ fn decode_clarity_val(
         cur_obj.set(cx, "abi_type", abi_type_obj)?;
     }
 
-    // TODO: is there a perfect overlap between stacks.js clarity json and contract ABI schema?
-
     if deep {
         match val {
             ClarityValue::Int(val) => {
@@ -1476,6 +1474,36 @@ fn create_profiler(mut cx: FunctionContext) -> JsResult<JsFunction> {
         Ok(result)
     })
 }
+
+/*
+#[cfg(feature = "profiling")]
+fn stop_profiler_pprof(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let mut profiler = PROFILER
+        .lock()
+        .or_else(|e| cx.throw_error(format!("Failed to aquire lock: {}", e))?)?;
+    let report_result = match &*profiler {
+        None => cx.throw_error("No profiler started")?,
+        Some(profiler) => profiler.report().build(),
+    };
+    let report = match report_result {
+        Ok(report) => report,
+        Err(err) => cx.throw_error(format!("Error generating report: {}", err))?,
+    };
+
+    let mut buf = Vec::new();
+
+    let profile = report
+        .pprof()
+        .or_else(|e| cx.throw_error(format!("Error creating pprof: {}", e)))?;
+    pprof::protos::Message::encode(&profile, &mut buf)
+        .or_else(|e| cx.throw_error(format!("Error encoding pprof profile: {}", e)))?;
+
+    *profiler = None;
+
+    let result = JsBuffer::external(&mut cx, buf);
+    Ok(result)
+}
+*/
 
 #[cfg(feature = "profiling")]
 fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {

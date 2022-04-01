@@ -2,22 +2,19 @@ use blockstack_lib::address::c32::c32_address;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::borrow::Borrow;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fmt;
 use std::io::Write;
 use std::ops::Deref;
-use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::hex::{encode_hex, encode_hex_no_prefix};
 
 use super::serder::TypePrefix;
-use super::signatures::{BufferLength, TypeSignature};
 
 pub const MAX_STRING_LEN: u8 = 128;
 pub const MAX_VALUE_SIZE: u32 = 1024 * 1024; // 1MB
                                              // this is the charged size for wrapped values, i.e., response or optionals
-pub const WRAPPER_VALUE_SIZE: u32 = 1;
-pub const MAX_TYPE_DEPTH: u8 = 32;
 
 // #[derive(Clone)]
 #[derive(Clone, Eq, PartialEq)]
@@ -25,88 +22,57 @@ pub enum Value {
     Int(i128),
     UInt(u128),
     Bool(bool),
-    Sequence(SequenceData),
-    Principal(PrincipalData),
-    Tuple(TupleData),
-    Optional(OptionalData),
-    Response(ResponseData),
+    Buffer(Vec<u8>),
+    List(Vec<Value>),
+    StringUTF8(Vec<Vec<u8>>),
+    StringASCII(Vec<u8>),
+    PrincipalStandard(StandardPrincipalData),
+    PrincipalContract(QualifiedContractIdentifier),
+    Tuple(BTreeMap<ClarityName, Value>),
+    OptionalSome(Box<Value>),
+    OptionalNone,
+    ResponseOk(Box<Value>),
+    ResponseErr(Box<Value>),
 }
-
-/*
-impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
-        use Value::*;
-        match (self, other) {
-            (Int(l0), Int(r0)) => l0 == r0,
-            (UInt(l0), UInt(r0)) => l0 == r0,
-            (Bool(l0), Bool(r0)) => l0 == r0,
-            (Sequence(SequenceData::Buffer(l0)), Sequence(SequenceData::Buffer(r0))) => l0.data == r0.data,
-            (Sequence(SequenceData::List(l0)), Sequence(SequenceData::List(r0))) => l0.data == r0.data,
-            (Sequence(SequenceData::String(CharType::UTF8(l0))), Sequence(SequenceData::String(CharType::UTF8(r0)))) => l0.data == r0.data,
-            (Sequence(SequenceData::String(CharType::ASCII(l0))), Sequence(SequenceData::String(CharType::ASCII(r0)))) => l0.data == r0.data,
-            (Sequence(l0), Sequence(r0)) => l0 == r0,
-            (Principal(l0), Principal(r0)) => l0 == r0,
-            (Tuple(l0), Tuple(r0)) => l0 == r0,
-            (Optional(l0), Optional(r0)) => l0 == r0,
-            (Response(l0), Response(r0)) => l0 == r0,
-            _ => false
-        }
-    }
-}
-
-impl Eq for Value {}
-*/
-
-pub const NONE: Value = Value::Optional(OptionalData { data: None });
 
 impl Value {
-    pub fn buff_from(buff_data: Vec<u8>) -> Value {
-        Value::Sequence(SequenceData::Buffer(BuffData { data: buff_data }))
+    pub fn buff(buff_data: Vec<u8>) -> Value {
+        Value::Buffer(buff_data)
     }
 
     pub fn okay(data: Value) -> Value {
-        Value::Response(ResponseData {
-            committed: true,
-            data: Box::new(data),
-        })
+        Value::ResponseOk(Box::new(data))
     }
 
     pub fn error(data: Value) -> Value {
-        Value::Response(ResponseData {
-            committed: false,
-            data: Box::new(data),
-        })
+        Value::ResponseErr(Box::new(data))
     }
 
     pub fn some(data: Value) -> Value {
-        Value::Optional(OptionalData {
-            data: Some(Box::new(data)),
-        })
+        Value::OptionalSome(Box::new(data))
     }
 
     pub fn none() -> Value {
-        NONE.clone()
+        Value::OptionalNone
     }
 
-    pub fn list_from(list_data: Vec<Value>) -> Value {
-        Value::Sequence(SequenceData::List(ListData { data: list_data }))
+    pub fn list(list_data: Vec<Value>) -> Value {
+        Value::List(list_data)
     }
 
-    pub fn tuple_from_data(mut data: Vec<(ClarityName, Value)>) -> Value {
+    pub fn tuple(mut data: Vec<(ClarityName, Value)>) -> Value {
         let mut data_map = BTreeMap::new();
         for (name, value) in data.drain(..) {
             data_map.insert(name, value);
         }
-        Value::Tuple(TupleData { data_map })
+        Value::Tuple(data_map)
     }
 
-    pub fn string_ascii_from_bytes(bytes: Vec<u8>) -> Value {
-        Value::Sequence(SequenceData::String(CharType::ASCII(ASCIIData {
-            data: bytes,
-        })))
+    pub fn string_ascii(bytes: Vec<u8>) -> Value {
+        Value::StringASCII(bytes)
     }
 
-    pub fn string_utf8_from_bytes(bytes: Vec<u8>) -> Value {
+    pub fn string_utf8(bytes: Vec<u8>) -> Value {
         let validated_utf8_str = String::from_utf8_lossy(&bytes);
         let mut data = vec![];
         for char in validated_utf8_str.chars() {
@@ -114,8 +80,7 @@ impl Value {
             char.encode_utf8(&mut encoded_char[..]);
             data.push(encoded_char);
         }
-
-        Value::Sequence(SequenceData::String(CharType::UTF8(UTF8Data { data })))
+        Value::StringUTF8(data)
     }
 
     pub fn type_prefix(&self) -> TypePrefix {
@@ -125,23 +90,17 @@ impl Value {
             UInt(_) => TypePrefix::UInt,
             Bool(true) => TypePrefix::BoolTrue,
             Bool(false) => TypePrefix::BoolFalse,
-            Principal(PrincipalData::Standard(_)) => TypePrefix::PrincipalStandard,
-            Principal(PrincipalData::Contract(_)) => TypePrefix::PrincipalContract,
-            Response(ResponseData {
-                committed: true,
-                data: _,
-            }) => TypePrefix::ResponseOk,
-            Response(ResponseData {
-                committed: false,
-                data: _,
-            }) => TypePrefix::ResponseErr,
-            Optional(OptionalData { data: None }) => TypePrefix::OptionalNone,
-            Optional(OptionalData { data: Some(_) }) => TypePrefix::OptionalSome,
+            PrincipalStandard(_) => TypePrefix::PrincipalStandard,
+            PrincipalContract(_) => TypePrefix::PrincipalContract,
+            ResponseOk(_) => TypePrefix::ResponseOk,
+            ResponseErr(_) => TypePrefix::ResponseErr,
+            OptionalSome(_) => TypePrefix::OptionalSome,
+            OptionalNone => TypePrefix::OptionalNone,
             Tuple(_) => TypePrefix::Tuple,
-            Sequence(SequenceData::Buffer(_)) => TypePrefix::Buffer,
-            Sequence(SequenceData::List(_)) => TypePrefix::List,
-            Sequence(SequenceData::String(CharType::ASCII(_))) => TypePrefix::StringASCII,
-            Sequence(SequenceData::String(CharType::UTF8(_))) => TypePrefix::StringUTF8,
+            Buffer(_) => TypePrefix::Buffer,
+            List(_) => TypePrefix::List,
+            StringASCII(_) => TypePrefix::StringASCII,
+            StringUTF8(_) => TypePrefix::StringUTF8,
         }
     }
 
@@ -158,41 +117,35 @@ impl Value {
             Int(data) => write!(w, "{}", data),
             UInt(data) => write!(w, "u{}", data),
             Bool(data) => write!(w, "{}", data),
-            Optional(OptionalData { data: Some(value) }) => {
+            OptionalSome(value) => {
                 write!(w, "(some ")?;
                 Value::repr_string_to_buffer(value, w)?;
                 write!(w, ")")
             }
-            Optional(OptionalData { data: None }) => write!(w, "none"),
-            Response(ResponseData {
-                committed: true,
-                data,
-            }) => {
+            OptionalNone => write!(w, "none"),
+            ResponseOk(data) => {
                 write!(w, "(ok ")?;
                 Value::repr_string_to_buffer(data, w)?;
                 write!(w, ")")
             }
-            Response(ResponseData {
-                committed: false,
-                data,
-            }) => {
+            ResponseErr(data) => {
                 write!(w, "(err ")?;
                 Value::repr_string_to_buffer(data, w)?;
                 write!(w, ")")
             }
             Tuple(data) => {
                 write!(w, "(tuple")?;
-                for (name, value) in data.data_map.iter() {
+                for (name, value) in data.iter() {
                     write!(w, " ({} ", name)?;
                     Value::repr_string_to_buffer(value, w)?;
                     write!(w, ")")?;
                 }
                 write!(w, ")")
             }
-            Principal(PrincipalData::Standard(data)) => {
+            PrincipalStandard(data) => {
                 write!(w, "'{}", c32_address(data.0, &data.1).unwrap())
             }
-            Principal(PrincipalData::Contract(data)) => {
+            PrincipalContract(data) => {
                 write!(
                     w,
                     "'{}.{}",
@@ -200,27 +153,27 @@ impl Value {
                     data.name
                 )
             }
-            Sequence(SequenceData::Buffer(value)) => {
-                write!(w, "{}", encode_hex(&value.data))
+            Buffer(value) => {
+                write!(w, "{}", encode_hex(value))
             }
-            Sequence(SequenceData::List(value)) => {
+            List(value) => {
                 write!(w, "(list")?;
-                for val in &value.data {
+                for val in value {
                     write!(w, " ")?;
                     Value::repr_string_to_buffer(val, w)?;
                 }
                 write!(w, ")")
             }
-            Sequence(SequenceData::String(CharType::ASCII(data))) => {
+            StringASCII(data) => {
                 write!(w, "\"")?;
-                for c in data.data.iter() {
+                for c in data.iter() {
                     write!(w, "{}", std::ascii::escape_default(*c))?;
                 }
                 write!(w, "\"")
             }
-            Sequence(SequenceData::String(CharType::UTF8(data))) => {
+            StringUTF8(data) => {
                 write!(w, "u\"")?;
-                for c in data.data.iter() {
+                for c in data.iter() {
                     if c.len() > 1 {
                         // We escape extended charset
                         write!(w, "\\u{{{}}}", encode_hex_no_prefix(c))?;
@@ -247,106 +200,51 @@ impl Value {
             Int(_) => write!(w, "int"),
             UInt(_) => write!(w, "uint"),
             Bool(_) => write!(w, "bool"),
-            Optional(OptionalData { data: Some(value) }) => {
+            OptionalSome(value) => {
                 write!(w, "(optional ")?;
                 Value::type_signature_to_buffer(value, w)?;
                 write!(w, ")")
             }
-            Optional(OptionalData { data: None }) => write!(w, "(optional UnknownType)"),
-            Response(ResponseData {
-                committed: true,
-                data,
-            }) => {
+            OptionalNone => write!(w, "(optional UnknownType)"),
+            ResponseOk(data) => {
                 write!(w, "(response ")?;
                 Value::type_signature_to_buffer(data, w)?;
                 write!(w, " UnknownType)")
             }
-            Response(ResponseData {
-                committed: false,
-                data,
-            }) => {
+            ResponseErr(data) => {
                 write!(w, "(response UnknownType ")?;
                 Value::type_signature_to_buffer(data, w)?;
                 write!(w, ")")
             }
             Tuple(data) => {
                 write!(w, "(tuple")?;
-                for (name, value) in data.data_map.iter() {
+                for (name, value) in data.iter() {
                     write!(w, " ({} ", name)?;
                     Value::type_signature_to_buffer(value, w)?;
                     write!(w, ")")?;
                 }
                 write!(w, ")")
             }
-            Principal(_) => write!(w, "principal"),
-            Sequence(SequenceData::Buffer(value)) => write!(w, "(buff {})", value.data.len()),
-            Sequence(SequenceData::List(value)) => {
-                write!(w, "(list {} ", value.data.len())?;
-                if value.data.len() > 0 {
+            PrincipalStandard(_) | PrincipalContract(_) => write!(w, "principal"),
+            Buffer(value) => write!(w, "(buff {})", value.len()),
+            List(value) => {
+                write!(w, "(list {} ", value.len())?;
+                if value.len() > 0 {
                     // TODO: this should use the least common supertype
-                    Value::type_signature_to_buffer(&value.data[0], w)?;
+                    Value::type_signature_to_buffer(&value[0], w)?;
                 } else {
                     write!(w, "UnknownType")?;
                 }
                 write!(w, ")")
             }
-            Sequence(SequenceData::String(CharType::ASCII(data))) => {
-                write!(w, "(string-ascii {})", data.data.len())
+            StringASCII(data) => {
+                write!(w, "(string-ascii {})", data.len())
             }
-            Sequence(SequenceData::String(CharType::UTF8(data))) => {
-                write!(w, "(string-utf8 {})", data.data.len() * 4)
+            StringUTF8(data) => {
+                write!(w, "(string-utf8 {})", data.len() * 4)
             }
         }
     }
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct OptionalData {
-    pub data: Option<Box<Value>>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct ResponseData {
-    pub committed: bool,
-    pub data: Box<Value>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct TupleData {
-    pub data_map: BTreeMap<ClarityName, Value>,
-}
-
-#[derive(Clone)]
-pub struct TupleTypeSignature {
-    pub type_map: BTreeMap<ClarityName, TypeSignature>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub enum SequenceData {
-    Buffer(BuffData),
-    List(ListData),
-    String(CharType),
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub enum CharType {
-    UTF8(UTF8Data),
-    ASCII(ASCIIData),
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct UTF8Data {
-    pub data: Vec<Vec<u8>>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct ASCIIData {
-    pub data: Vec<u8>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct ListData {
-    pub data: Vec<Value>,
 }
 
 /*
@@ -477,23 +375,6 @@ impl ListData {
 }
 */
 
-#[derive(Clone)]
-pub struct ListTypeData {
-    max_len: u32,
-    entry_type: Box<TypeSignature>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub struct BuffData {
-    pub data: Vec<u8>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub enum PrincipalData {
-    Standard(StandardPrincipalData),
-    Contract(QualifiedContractIdentifier),
-}
-
 #[derive(Clone, Eq, PartialEq)]
 pub struct StandardPrincipalData(pub u8, pub [u8; 20]);
 
@@ -501,12 +382,6 @@ pub struct StandardPrincipalData(pub u8, pub [u8; 20]);
 pub struct QualifiedContractIdentifier {
     pub issuer: StandardPrincipalData,
     pub name: ContractName,
-}
-
-#[derive(Clone)]
-pub struct TraitIdentifier {
-    pub name: ClarityName,
-    pub contract_identifier: QualifiedContractIdentifier,
 }
 
 #[macro_export]
