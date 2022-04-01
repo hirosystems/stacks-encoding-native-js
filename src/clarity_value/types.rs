@@ -60,12 +60,8 @@ impl Value {
         Value::List(list_data)
     }
 
-    pub fn tuple(mut data: Vec<(ClarityName, Value)>) -> Value {
-        let mut data_map = BTreeMap::new();
-        for (name, value) in data.drain(..) {
-            data_map.insert(name, value);
-        }
-        Value::Tuple(data_map)
+    pub fn tuple(data: BTreeMap<ClarityName, Value>) -> Value {
+        Value::Tuple(data)
     }
 
     pub fn string_ascii(bytes: Vec<u8>) -> Value {

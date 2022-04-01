@@ -1,4 +1,5 @@
 use super::types::*;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::io::Read;
@@ -221,13 +222,13 @@ impl Value {
                 if len > MAX_VALUE_SIZE {
                     return Err("Illegal tuple type size".into());
                 }
-                let mut items = Vec::with_capacity(len as usize);
+                let mut data = BTreeMap::new();
                 for _i in 0..len {
                     let key = ClarityName::deserialize_read(r)?;
                     let value = Value::inner_deserialize_read(r, depth + 1)?;
-                    items.push((key, value))
+                    data.insert(key, value);
                 }
-                Ok(Value::tuple(items))
+                Ok(Value::tuple(data))
             }
             TypePrefix::StringASCII => {
                 let mut buffer_len = [0; 4];
