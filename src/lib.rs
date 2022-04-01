@@ -28,6 +28,7 @@ use clarity::vm::types::{
     signatures::TypeSignature as ClarityTypeSignature, Value as ClarityValue,
 };
 use git_version::git_version;
+use hex::{decode_hex, encode_hex};
 use lazy_static::lazy_static;
 use neon::{prelude::*, types::buffer::TypedArray};
 use regex::Regex;
@@ -39,6 +40,8 @@ use std::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
+mod clarity_value;
+mod hex;
 mod unicode_printable;
 
 const GIT_VERSION: &str = git_version!(
@@ -61,30 +64,6 @@ pub fn eval<'a, 'b, C: Context<'a>>(
 fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
     let version = cx.string(GIT_VERSION);
     Ok(version)
-}
-
-fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Box<[u8]>, hex_simd::Error> {
-    if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
-        hex_simd::decode_to_boxed_bytes(&data.as_ref()[2..])
-    } else {
-        hex_simd::decode_to_boxed_bytes(&data.as_ref())
-    }
-}
-
-fn encode_hex(data: &[u8]) -> Box<str> {
-    let mut uninit_buf = unsafe { simd_abstraction::tools::alloc_uninit_bytes(data.len() * 2 + 2) };
-    let uninit_slice = &mut *uninit_buf;
-    uninit_slice[0].write(b'0');
-    uninit_slice[1].write(b'x');
-    let dest_buf = hex_simd::OutBuf::from_uninit_mut(&mut uninit_slice[2..]);
-    hex_simd::encode(data, dest_buf, hex_simd::AsciiCase::Lower).unwrap();
-
-    let len = uninit_buf.len();
-    let ptr = Box::into_raw(uninit_buf).cast::<u8>();
-    unsafe {
-        let buf = core::slice::from_raw_parts_mut(ptr, len);
-        Box::from_raw(core::str::from_utf8_unchecked_mut(buf))
-    }
 }
 
 #[allow(dead_code)]
@@ -313,26 +292,23 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString> {
-    let clarity_value = arg_as_bytes(&mut cx, 0, |val_bytes| {
-        let cursor = &mut &val_bytes[..];
-        let clarity_value = ClarityValue::consensus_deserialize(cursor)
-            .or_else(|e| Err(format!("Clarity parsing error: {}", e)))?;
-        Ok(clarity_value)
+    let type_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        clarity_value::types::Value::deserialize_read(&mut &val_bytes[..])
+            .map_err(|err| err.as_string())
+            .map(|val| val.type_signature())
     })
-    .or_else(|e| cx.throw_error(e))?;
-    let type_signature = ClarityTypeSignature::type_of(&clarity_value);
-    Ok(cx.string(type_signature.to_string()))
+    .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
+    Ok(cx.string(type_string))
 }
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
-    let clarity_value = arg_as_bytes(&mut cx, 0, |val_bytes| {
-        let cursor = &mut &val_bytes[..];
-        let clarity_value = ClarityValue::consensus_deserialize(cursor)
-            .or_else(|e| Err(format!("Clarity parsing error: {}", e)))?;
-        Ok(clarity_value)
+    let repr_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        clarity_value::types::Value::deserialize_read(&mut &val_bytes[..])
+            .map_err(|err| err.as_string())
+            .map(|val| val.repr_string())
     })
-    .or_else(|e| cx.throw_error(e))?;
-    Ok(cx.string(clarity_value.to_string()))
+    .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
+    Ok(cx.string(repr_string))
 }
 
 fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -388,6 +364,46 @@ fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
     };
     resp_obj.set(&mut cx, "post_conditions", array_result)?;
     Ok(resp_obj)
+}
+
+fn decode_clarity_value_array2(mut cx: FunctionContext) -> JsResult<JsArray> {
+    let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
+
+    let result_length = if input_bytes.len() >= 4 {
+        u32::from_be_bytes(input_bytes[..4].try_into().unwrap())
+    } else {
+        0
+    };
+
+    let array_result = JsArray::new(&mut cx, result_length);
+
+    if input_bytes.len() > 4 {
+        let val_slice = &input_bytes[4..];
+        let mut byte_cursor = std::io::Cursor::new(val_slice);
+        let val_len = val_slice.len() as u64;
+        let mut i: u32 = 0;
+        while byte_cursor.position() < val_len - 1 {
+            let cur_start = byte_cursor.position() as usize;
+            let clarity_value = clarity_value::types::Value::deserialize_read(&mut byte_cursor)
+                .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
+            let cur_end = byte_cursor.position() as usize;
+            let value_slice = &val_slice[cur_start..cur_end];
+            let value_obj = cx.empty_object();
+
+            let repr_string = cx.string(clarity_value.repr_string());
+            value_obj.set(&mut cx, "repr", repr_string)?;
+
+            let hex = cx.string(encode_hex(value_slice));
+            value_obj.set(&mut cx, "hex", hex)?;
+
+            let type_id = cx.number(clarity_value.type_prefix().to_u8());
+            value_obj.set(&mut cx, "type_id", type_id)?;
+
+            array_result.set(&mut cx, i, value_obj)?;
+            i = i + 1;
+        }
+    }
+    Ok(array_result)
 }
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
@@ -1183,12 +1199,12 @@ fn bitcoin_to_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(address_string)
 }
 
-fn get_stacks_address_string<'a, C: Context<'a>>(cx: &mut C, address: &StacksAddress) -> NeonResult<Handle<'a, JsString>> {
-    let contract_address = c32_address(
-        address.version,
-        address.bytes.as_bytes(),
-    )
-    .or_else(|e| cx.throw_error(format!("Error converting to C32 address: {}", e)))?;
+fn get_stacks_address_string<'a, C: Context<'a>>(
+    cx: &mut C,
+    address: &StacksAddress,
+) -> NeonResult<Handle<'a, JsString>> {
+    let contract_address = c32_address(address.version, address.bytes.as_bytes())
+        .or_else(|e| cx.throw_error(format!("Error converting to C32 address: {}", e)))?;
     Ok(cx.string(contract_address))
 }
 
@@ -1222,6 +1238,65 @@ fn memo_to_string(mut cx: FunctionContext) -> JsResult<JsString> {
         .or_else(|e| cx.throw_error(e))?;
     let str_result = cx.string(normalized);
     Ok(str_result)
+}
+
+#[cfg(feature = "profiling")]
+fn perf_test_c32_encode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    use rand::Rng;
+    let mut inputs: Vec<(u8, [u8; 20])> = vec![];
+    for _ in 0..2000 {
+        let random_version: u8 = rand::thread_rng().gen_range(0..31);
+        let random_bytes = rand::thread_rng().gen::<[u8; 20]>();
+        inputs.push((random_version, random_bytes));
+    }
+
+    let profiler = pprof::ProfilerGuard::new(100)
+        .or_else(|e| cx.throw_error(format!("Failed to create profiler guard: {}", e))?)?;
+
+    for (version, bytes) in inputs {
+        for _ in 0..50_000 {
+            c32_address(version, &bytes).unwrap();
+        }
+    }
+
+    let report = profiler.report().build().unwrap();
+    let mut buf = Vec::new();
+    report
+        .flamegraph(&mut buf)
+        .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
+
+    let result = JsBuffer::external(&mut cx, buf);
+    Ok(result)
+}
+
+#[cfg(feature = "profiling")]
+fn perf_test_c32_decode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    use rand::Rng;
+    let mut inputs: Vec<String> = vec![];
+    for _ in 0..2000 {
+        let random_version: u8 = rand::thread_rng().gen_range(0..31);
+        let random_bytes = rand::thread_rng().gen::<[u8; 20]>();
+        let addr = c32_address(random_version, &random_bytes).unwrap();
+        inputs.push(addr);
+    }
+
+    let profiler = pprof::ProfilerGuard::new(100)
+        .or_else(|e| cx.throw_error(format!("Failed to create profiler guard: {}", e))?)?;
+
+    for _ in 0..50_000 {
+        for addr in &inputs {
+            c32_address_decode(&addr).unwrap();
+        }
+    }
+
+    let report = profiler.report().build().unwrap();
+    let mut buf = Vec::new();
+    report
+        .flamegraph(&mut buf)
+        .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
+
+    let result = JsBuffer::external(&mut cx, buf);
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -1437,6 +1512,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     )?;
     cx.export_function("decodeClarityValue", decode_clarity_value)?;
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
+    cx.export_function("decodeClarityValueList2", decode_clarity_value_array2)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
     cx.export_function("stacksToBitcoinAddress", stacks_to_bitcoin_address)?;
@@ -1451,6 +1527,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         cx.export_function("startProfiler", start_profiler)?;
         cx.export_function("stopProfiler", stop_profiler)?;
         cx.export_function("createProfiler", create_profiler)?;
+        cx.export_function("perfTestC32Encode", perf_test_c32_encode)?;
+        cx.export_function("perfTestC32Decode", perf_test_c32_decode)?;
     }
 
     Ok(())

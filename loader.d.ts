@@ -21,6 +21,8 @@ export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityV
  */
 export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean, deep?: false): ParsedClarityValue[];
 
+export function decodeClarityValueList2(arg: string | Buffer): {repr: string; hex: string; type_id: number;}[];
+
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 
 export function stacksToBitcoinAddress(stackAddress: string): string;
@@ -40,3 +42,5 @@ export function startProfiler(): string;
 export function stopProfiler(): Buffer;
 
 export function createProfiler(): () => Buffer;
+
+export function perfTestC32Encode(): Buffer;
