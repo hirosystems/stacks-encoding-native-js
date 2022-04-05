@@ -8,20 +8,17 @@ export function decodeClarityValueToRepr(arg: string | Buffer): string;
 
 export function decodeClarityValueToTypeName(arg: string | Buffer): string;
 
-export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityValue>(arg: string | Buffer, includeAbi?: boolean): T;
+export function decodeClarityValue<T extends ParsedClarityValue = ParsedClarityValue>(arg: string | Buffer): T;
 
 /**
  * 
  * @param arg 
- * @param includeAbi 
  * @param deep - If not specified as true, then the deserialized objects will only contain the 
  * properties `hex, repr, type, type_id`. And nested types like Tuple, List, Response, etc will
  * not contain decoded children.
  * TODO: fix the clarity result type definition to be more accurate.
  */
-export function decodeClarityValueList(arg: string | Buffer, includeAbi?: boolean, deep?: false): ParsedClarityValue[];
-
-export function decodeClarityValueList2(arg: string | Buffer): {repr: string; hex: string; type_id: number;}[];
+export function decodeClarityValueList(arg: string | Buffer, deep?: false): ParsedClarityValue[];
 
 export function decodePostConditions(arg: string | Buffer): DecodedPostConditionsResult;
 

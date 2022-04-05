@@ -425,8 +425,6 @@ export interface ParsedClarityValueInfo {
     repr: string;
     /** Hex encoded string of the serialized Clarity value */
     hex: string;
-    /** Type represented as contract ABI JSON */
-    abi_type?: any;
 }
 
 export interface ParsedClarityValueInt extends ClarityValueInt, ParsedClarityValueInfo {}

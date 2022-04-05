@@ -30,7 +30,7 @@ for (let i = 0; i < rounds; i++) {
         console.log(`${Math.round(i / rounds * 100)}%`);
     }
     for (const buf of buffers) {
-        const decoded = sen.decodeClarityValueList2(buf);
+        const decoded = sen.decodeClarityValueList(buf);
         // do something with results so JIT doesn't do anything weird like optimize away something
         totalLen += decoded.map(d => d.hex.length).reduce((p, d) => p + d, 0);
     }
