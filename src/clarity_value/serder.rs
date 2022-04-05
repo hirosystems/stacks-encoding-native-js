@@ -187,7 +187,7 @@ impl Value {
                 }
                 let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                Value::buff(data)
+                Value::Buffer(data)
             }
             TypePrefix::BoolTrue => Bool(true),
             TypePrefix::BoolFalse => Bool(false),
@@ -202,16 +202,16 @@ impl Value {
             }
             TypePrefix::ResponseOk => {
                 let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
-                Value::okay(value)
+                Value::ResponseOk(Box::new(value))
             }
             TypePrefix::ResponseErr => {
                 let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
-                Value::error(value)
+                Value::ResponseErr(Box::new(value))
             }
-            TypePrefix::OptionalNone => Value::none(),
+            TypePrefix::OptionalNone => Value::OptionalNone,
             TypePrefix::OptionalSome => {
                 let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
-                Value::some(value)
+                Value::OptionalSome(Box::new(value))
             }
             TypePrefix::List => {
                 let mut len = [0; 4];
@@ -227,7 +227,7 @@ impl Value {
                     // r.set_position(r.position() + value.serialized_bytes.len() as u64);
                     items.push(value);
                 }
-                Value::list(items)
+                Value::List(items)
             }
             TypePrefix::Tuple => {
                 let mut len = [0; 4];
@@ -242,7 +242,7 @@ impl Value {
                     let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
                     data.insert(key, value);
                 }
-                Value::tuple(data)
+                Value::Tuple(data)
             }
             TypePrefix::StringASCII => {
                 let mut buffer_len = [0; 4];
@@ -253,7 +253,7 @@ impl Value {
                 }
                 let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                Value::string_ascii(data)
+                Value::StringASCII(data)
             }
             TypePrefix::StringUTF8 => {
                 let mut total_len = [0; 4];

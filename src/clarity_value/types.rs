@@ -55,39 +55,7 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn buff(buff_data: Vec<u8>) -> Value {
-        Value::Buffer(buff_data)
-    }
-
-    pub fn okay(data: ClarityValue) -> Value {
-        Value::ResponseOk(Box::new(data))
-    }
-
-    pub fn error(data: ClarityValue) -> Value {
-        Value::ResponseErr(Box::new(data))
-    }
-
-    pub fn some(data: ClarityValue) -> Value {
-        Value::OptionalSome(Box::new(data))
-    }
-
-    pub fn none() -> Value {
-        Value::OptionalNone
-    }
-
-    pub fn list(list_data: Vec<ClarityValue>) -> Value {
-        Value::List(list_data)
-    }
-
-    pub fn tuple(data: BTreeMap<ClarityName, ClarityValue>) -> Value {
-        Value::Tuple(data)
-    }
-
-    pub fn string_ascii<'a>(bytes: Vec<u8>) -> Value {
-        Value::StringASCII(bytes)
-    }
-
-    pub fn string_utf8<'a>(bytes: Vec<u8>) -> Value {
+    pub fn string_utf8(bytes: Vec<u8>) -> Value {
         let validated_utf8_str = String::from_utf8_lossy(&bytes);
         let mut data = vec![];
         for char in validated_utf8_str.chars() {
