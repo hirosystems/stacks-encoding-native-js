@@ -142,13 +142,17 @@ fn get_cursor_slice<'a>(start_position: usize, cursor: &'a Cursor<&[u8]>) -> &'a
 }
 
 impl Value {
-    pub fn deserialize_read(r: &mut Cursor<&[u8]>) -> Result<ClarityValue, DeserializeError> {
-        Value::inner_deserialize_read(r, 0)
+    pub fn deserialize_read(
+        r: &mut Cursor<&[u8]>,
+        with_bytes: bool,
+    ) -> Result<ClarityValue, DeserializeError> {
+        Value::inner_deserialize_read(r, 0, with_bytes)
     }
 
     fn inner_deserialize_read(
         r: &mut Cursor<&[u8]>,
         depth: u8,
+        with_bytes: bool,
     ) -> Result<ClarityValue, DeserializeError> {
         use super::types::Value::*;
 
@@ -163,20 +167,16 @@ impl Value {
 
         let prefix = TypePrefix::from_u8(header[0]).ok_or_else(|| "Bad type prefix")?;
 
-        match prefix {
+        let clarity_value = match prefix {
             TypePrefix::Int => {
                 let mut int_buffer = [0; 16];
                 r.read_exact(&mut int_buffer)?;
-                let val = Int(i128::from_be_bytes(int_buffer));
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, val))
+                Int(i128::from_be_bytes(int_buffer))
             }
             TypePrefix::UInt => {
                 let mut int_buffer = [0; 16];
                 r.read_exact(&mut int_buffer)?;
-                let val = UInt(u128::from_be_bytes(int_buffer));
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, val))
+                UInt(u128::from_be_bytes(int_buffer))
             }
             TypePrefix::Buffer => {
                 let mut buffer_len = [0; 4];
@@ -187,50 +187,31 @@ impl Value {
                 }
                 let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::buff(data)))
+                Value::buff(data)
             }
-            TypePrefix::BoolTrue => {
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Bool(true)))
-            }
-            TypePrefix::BoolFalse => {
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Bool(false)))
-            }
+            TypePrefix::BoolTrue => Bool(true),
+            TypePrefix::BoolFalse => Bool(false),
             TypePrefix::PrincipalStandard => {
                 let principal = StandardPrincipalData::deserialize_read(r)?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(
-                    bytes,
-                    Value::PrincipalStandard(principal),
-                ))
+                Value::PrincipalStandard(principal)
             }
             TypePrefix::PrincipalContract => {
                 let issuer = StandardPrincipalData::deserialize_read(r)?;
                 let name = ContractName::deserialize_read(r)?;
-                let val = Value::PrincipalContract(QualifiedContractIdentifier { issuer, name });
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, val))
+                Value::PrincipalContract(QualifiedContractIdentifier { issuer, name })
             }
             TypePrefix::ResponseOk => {
-                let value = Value::inner_deserialize_read(r, depth + 1)?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::okay(value)))
+                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                Value::okay(value)
             }
             TypePrefix::ResponseErr => {
-                let value = Value::inner_deserialize_read(r, depth + 1)?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::error(value)))
+                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                Value::error(value)
             }
-            TypePrefix::OptionalNone => {
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::none()))
-            }
+            TypePrefix::OptionalNone => Value::none(),
             TypePrefix::OptionalSome => {
-                let value = Value::inner_deserialize_read(r, depth + 1)?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::some(value)))
+                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                Value::some(value)
             }
             TypePrefix::List => {
                 let mut len = [0; 4];
@@ -242,12 +223,11 @@ impl Value {
                 let mut items = Vec::with_capacity(len as usize);
                 for _i in 0..len {
                     // let remaining = &r.get_ref()[r.position() as usize..];
-                    let value = Value::inner_deserialize_read(r, depth + 1)?;
+                    let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
                     // r.set_position(r.position() + value.serialized_bytes.len() as u64);
                     items.push(value);
                 }
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::list(items)))
+                Value::list(items)
             }
             TypePrefix::Tuple => {
                 let mut len = [0; 4];
@@ -259,11 +239,10 @@ impl Value {
                 let mut data = BTreeMap::new();
                 for _i in 0..len {
                     let key = ClarityName::deserialize_read(r)?;
-                    let value = Value::inner_deserialize_read(r, depth + 1)?;
+                    let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
                     data.insert(key, value);
                 }
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::tuple(data)))
+                Value::tuple(data)
             }
             TypePrefix::StringASCII => {
                 let mut buffer_len = [0; 4];
@@ -274,8 +253,7 @@ impl Value {
                 }
                 let mut data = vec![0; buffer_len as usize];
                 r.read_exact(&mut data[..])?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::string_ascii(data)))
+                Value::string_ascii(data)
             }
             TypePrefix::StringUTF8 => {
                 let mut total_len = [0; 4];
@@ -286,9 +264,15 @@ impl Value {
                 }
                 let mut data: Vec<u8> = vec![0; total_len as usize];
                 r.read_exact(&mut data[..])?;
-                let bytes = &r.get_ref()[cursor_start..r.position() as usize];
-                Ok(ClarityValue::new(bytes, Value::string_utf8(data)))
+                Value::string_utf8(data)
             }
+        };
+
+        if with_bytes {
+            let bytes = &r.get_ref()[cursor_start..r.position() as usize];
+            Ok(ClarityValue::new_with_bytes(bytes, clarity_value))
+        } else {
+            Ok(ClarityValue::new(clarity_value))
         }
     }
 }

@@ -17,14 +17,21 @@ pub const MAX_VALUE_SIZE: u32 = 1024 * 1024; // 1MB
                                              // this is the charged size for wrapped values, i.e., response or optionals
 
 pub struct ClarityValue {
-    pub serialized_bytes: Vec<u8>,
+    pub serialized_bytes: Option<Vec<u8>>,
     pub value: Value,
 }
 
 impl ClarityValue {
-    pub fn new<T: AsRef<[u8]>>(serialized_bytes: T, value: Value) -> ClarityValue {
+    pub fn new_with_bytes<T: AsRef<[u8]>>(serialized_bytes: T, value: Value) -> ClarityValue {
         ClarityValue {
-            serialized_bytes: serialized_bytes.as_ref().to_vec(),
+            serialized_bytes: Some(serialized_bytes.as_ref().to_vec()),
+            value,
+        }
+    }
+
+    pub fn new(value: Value) -> ClarityValue {
+        ClarityValue {
+            serialized_bytes: None,
             value,
         }
     }
