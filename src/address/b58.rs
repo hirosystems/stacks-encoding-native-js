@@ -14,7 +14,7 @@
 
 //! Base58 encoder and decoder
 
-use std::{error, fmt, str};
+use std::{fmt, str};
 
 use sha2::{Digest, Sha256};
 
@@ -296,7 +296,7 @@ pub fn check_encode_slice_to_fmt(fmt: &mut fmt::Formatter, data: &[u8]) -> fmt::
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::decode_hex;
+    use crate::hex::decode_hex;
 
     #[test]
     fn test_base58_encode() {
