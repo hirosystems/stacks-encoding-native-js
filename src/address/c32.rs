@@ -1,24 +1,9 @@
-// Copyright (C) 2013-2020 Blockstack PBC, a public benefit corporation
-// Copyright (C) 2020 Stacks Open Internet Foundation
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use super::Error;
 
 use sha2::Digest;
 use sha2::Sha256;
 use std::convert::TryFrom;
+use std::convert::TryInto;
 
 const C32_CHARACTERS: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -230,10 +215,14 @@ fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<Str
     result[1] = C32_CHARACTERS[version as usize];
     let bytes_written = c32_encode_to_buffer(&buffer, &mut result[2..])?;
     result.truncate(bytes_written + 2);
-    Ok(String::from_utf8(result).unwrap())
+    let str_result = unsafe { String::from_utf8_unchecked(result) };
+    Ok(str_result)
 }
 
-fn c32_check_decode(check_data_unsanitized: &str) -> Result<(u8, Vec<u8>), Error> {
+fn c32_check_decode<TOutput>(check_data_unsanitized: &str) -> Result<(u8, TOutput), Error>
+where
+    TOutput: for<'a> TryFrom<&'a [u8]>,
+{
     // must be ASCII
     if !check_data_unsanitized.is_ascii() {
         return Err(Error::InvalidCrockford32);
@@ -280,11 +269,13 @@ fn c32_check_decode(check_data_unsanitized: &str) -> Result<(u8, Vec<u8>), Error
     }
 
     let version = decoded_version[0];
-    let data = data_bytes.to_vec();
+    let data: TOutput = data_bytes
+        .try_into()
+        .map_err(|_| Error::InvalidCrockford32)?;
     Ok((version, data))
 }
 
-pub fn c32_address_decode(c32_address_str: &str) -> Result<(u8, Vec<u8>), Error> {
+pub fn c32_address_decode(c32_address_str: &str) -> Result<(u8, [u8; 20]), Error> {
     if c32_address_str.len() <= 5 {
         Err(Error::InvalidCrockford32)
     } else {

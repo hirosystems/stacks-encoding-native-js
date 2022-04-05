@@ -1,25 +1,19 @@
-// Copyright (C) 2013-2020 Blockstack PBC, a public benefit corporation
-// Copyright (C) 2020 Stacks Open Internet Foundation
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 use std::error;
 use std::fmt;
 
 use std::convert::TryFrom;
 
+use self::bitcoin_address::BitcoinAddress;
+use self::bitcoin_address::ADDRESS_VERSION_MAINNET_MULTISIG;
+use self::bitcoin_address::ADDRESS_VERSION_MAINNET_SINGLESIG;
+use self::bitcoin_address::ADDRESS_VERSION_TESTNET_MULTISIG;
+use self::bitcoin_address::ADDRESS_VERSION_TESTNET_SINGLESIG;
+use self::stacks_address::StacksAddress;
+
+pub mod b58;
+pub mod bitcoin_address;
 pub mod c32;
+pub mod stacks_address;
 
 pub const C32_ADDRESS_VERSION_MAINNET_SINGLESIG: u8 = 22; // P
 pub const C32_ADDRESS_VERSION_MAINNET_MULTISIG: u8 = 20; // M
@@ -133,4 +127,52 @@ impl TryFrom<u8> for AddressHashMode {
             _ => Err(Error::InvalidVersion(value)),
         }
     }
+}
+
+fn btc_to_stx_addr_version_byte(version: u8) -> Option<u8> {
+    match version {
+        ADDRESS_VERSION_MAINNET_SINGLESIG => Some(C32_ADDRESS_VERSION_MAINNET_SINGLESIG),
+        ADDRESS_VERSION_MAINNET_MULTISIG => Some(C32_ADDRESS_VERSION_MAINNET_MULTISIG),
+        ADDRESS_VERSION_TESTNET_SINGLESIG => Some(C32_ADDRESS_VERSION_TESTNET_SINGLESIG),
+        ADDRESS_VERSION_TESTNET_MULTISIG => Some(C32_ADDRESS_VERSION_TESTNET_MULTISIG),
+        _ => None,
+    }
+}
+
+fn stx_to_btc_version_byte(version: u8) -> Option<u8> {
+    match version {
+        C32_ADDRESS_VERSION_MAINNET_SINGLESIG => Some(ADDRESS_VERSION_MAINNET_SINGLESIG),
+        C32_ADDRESS_VERSION_MAINNET_MULTISIG => Some(ADDRESS_VERSION_MAINNET_MULTISIG),
+        C32_ADDRESS_VERSION_TESTNET_SINGLESIG => Some(ADDRESS_VERSION_TESTNET_SINGLESIG),
+        C32_ADDRESS_VERSION_TESTNET_MULTISIG => Some(ADDRESS_VERSION_TESTNET_MULTISIG),
+        _ => None,
+    }
+}
+
+pub fn btc_addr_to_stx_addr_version(addr: &BitcoinAddress) -> Result<u8, String> {
+    let btc_version =
+        bitcoin_address::address_type_to_version_byte(&addr.addrtype, &addr.network_id);
+    btc_to_stx_addr_version_byte(btc_version).ok_or_else(|| {
+        format!(
+            "Failed to decode Bitcoin version byte to Stacks version byte: {}",
+            btc_version
+        )
+    })
+}
+
+pub fn btc_addr_to_stx_addr(addr: &BitcoinAddress) -> Result<StacksAddress, String> {
+    let version = btc_addr_to_stx_addr_version(addr)?;
+    Ok(StacksAddress {
+        version: version,
+        hash160_bytes: addr.hash160_bytes.clone(),
+    })
+}
+
+pub fn stx_addr_to_btc_addr(addr: &StacksAddress) -> String {
+    let btc_version = stx_to_btc_version_byte(addr.version)
+        // fallback to version
+        .unwrap_or(addr.version);
+    let mut all_bytes = vec![btc_version];
+    all_bytes.extend(addr.hash160_bytes.iter());
+    b58::check_encode_slice(&all_bytes)
 }

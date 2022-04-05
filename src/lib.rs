@@ -1,22 +1,21 @@
 use address::{
+    bitcoin_address,
     c32::{c32_address, c32_address_decode},
-    AddressHashMode,
+    stacks_address, AddressHashMode,
 };
 use blockstack_lib::{
-    burnchains::bitcoin::address::BitcoinAddress,
-    chainstate::stacks::{
-        address::StacksAddressExtensions, MultisigSpendingCondition, SinglesigSpendingCondition,
-        StacksTransaction, TransactionAuth, TransactionAuthField, TransactionAuthFieldID,
-        TransactionAuthFlags, TransactionPublicKeyEncoding, TransactionSpendingCondition,
-        TransactionVersion,
-    },
     chainstate::stacks::{
         AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
         PostConditionPrincipal, PostConditionPrincipalID, StacksMicroblockHeader,
         TransactionContractCall, TransactionPayload, TransactionPayloadID,
         TransactionPostCondition, TransactionSmartContract,
     },
-    types::{chainstate::StacksAddress, Address, StacksPublicKeyBuffer},
+    chainstate::stacks::{
+        MultisigSpendingCondition, SinglesigSpendingCondition, StacksTransaction, TransactionAuth,
+        TransactionAuthField, TransactionAuthFieldID, TransactionAuthFlags,
+        TransactionPublicKeyEncoding, TransactionSpendingCondition, TransactionVersion,
+    },
+    types::{chainstate::StacksAddress, StacksPublicKeyBuffer},
     vm::types::{serialization::TypePrefix, PrincipalData, StandardPrincipalData},
 };
 use git_version::git_version;
@@ -1126,11 +1125,8 @@ fn stacks_address_from_parts(mut cx: FunctionContext) -> JsResult<JsString> {
 }
 
 fn stacks_to_bitcoin_address_internal(input: String) -> Result<String, String> {
-    let stacks_address = match StacksAddress::from_string(&input) {
-        Some(addr) => addr,
-        None => Err("Error parsing data to Stacks address")?,
-    };
-    let bitcoin_address = stacks_address.to_b58();
+    let stacks_address = stacks_address::StacksAddress::from_string(&input)?;
+    let bitcoin_address = address::stx_addr_to_btc_addr(&stacks_address);
     Ok(bitcoin_address)
 }
 
@@ -1144,13 +1140,21 @@ fn stacks_to_bitcoin_address(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn bitcoin_to_stacks_address(mut cx: FunctionContext) -> JsResult<JsString> {
     let bitcoin_address_arg = cx.argument::<JsString>(0)?.value(&mut cx);
-    let bitcoin_address = BitcoinAddress::from_b58(&bitcoin_address_arg)
+    let bitcoin_address = bitcoin_address::from_b58(&bitcoin_address_arg)
         .or_else(|e| cx.throw_error(format!("Error parsing Bitcoin address: {}", e)))?;
 
-    let stacks_address = StacksAddress::from_bitcoin_address(&bitcoin_address);
+    let stacks_addr_version =
+        address::btc_addr_to_stx_addr_version(&bitcoin_address).or_else(|e| {
+            cx.throw_error(format!(
+                "Error getting Stacks address version from Bitcoin address: {}",
+                e
+            ))
+        })?;
 
-    let address_string = get_stacks_address_string(&mut cx, &stacks_address)?;
-    Ok(address_string)
+    let stacks_addr = c32_address(stacks_addr_version, &bitcoin_address.hash160_bytes)
+        .or_else(|e| cx.throw_error(format!("Error converting to C32 address: {}", e)))?;
+
+    Ok(cx.string(stacks_addr))
 }
 
 fn get_stacks_address_string<'a, C: Context<'a>>(
