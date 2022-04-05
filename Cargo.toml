@@ -33,6 +33,7 @@ git-version = "0.3.5"
 lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
 rand = "0.8.5"
+byteorder = "1.4.3"
 
 [dependencies.pprof]
 # git = "https://github.com/YangKeao/pprof-rs"
@@ -55,6 +56,9 @@ version = "0.10.0"
 # rev = "bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
 default-features = false
 features = ["napi-6"]
+
+[dev-dependencies]
+flate2 = "1.0.22"
 
 [features]
 profiling = ["pprof"]

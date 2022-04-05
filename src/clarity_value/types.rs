@@ -16,6 +16,9 @@ pub const MAX_STRING_LEN: u8 = 128;
 pub const MAX_VALUE_SIZE: u32 = 1024 * 1024; // 1MB
                                              // this is the charged size for wrapped values, i.e., response or optionals
 
+pub const CONTRACT_MIN_NAME_LENGTH: usize = 1;
+pub const CONTRACT_MAX_NAME_LENGTH: usize = 40;
+
 pub struct ClarityValue {
     pub serialized_bytes: Option<Vec<u8>>,
     pub value: Value,

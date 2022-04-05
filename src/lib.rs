@@ -15,12 +15,13 @@ use stacks_common::codec::StacksMessageCodec;
 use std::{convert::TryInto, io::Cursor, sync::Mutex};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::stacks_tx::decode_transaction;
+use crate::{post_condition::decode_tx_post_conditions, stacks_tx::decode_transaction};
 
 mod address;
 mod clarity_value;
 mod hex;
 mod neon_util;
+mod post_condition;
 mod stacks_tx;
 mod unicode_printable;
 
@@ -67,61 +68,6 @@ fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     })
     .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
     Ok(cx.string(repr_string))
-}
-
-fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
-    let resp_obj = cx.empty_object();
-
-    // first byte is post condition mode
-    let post_condition_mode = cx.number(input_bytes[0]);
-    resp_obj.set(&mut cx, "post_condition_mode", post_condition_mode)?;
-
-    /*
-    match post_condition_mode {
-        1 => {
-            let mode = cx.string("allow");
-            resp_obj.set(&mut cx, "post_condition_mode", mode)?;
-        }
-        2 => {
-            let mode = cx.string("deny");
-            resp_obj.set(&mut cx, "post_condition_mode", mode)?;
-        }
-        _ => cx.throw_error(format!(
-            "PostConditionMode byte must be either 1 or 2 but was {}",
-            post_condition_mode
-        ))?,
-    };
-    */
-    let array_result = if input_bytes.len() > 4 {
-        // next 4 bytes are array length
-        let result_length = u32::from_be_bytes(input_bytes[1..5].try_into().or_else(|e| {
-            cx.throw_error(format!(
-                "Error reading post condition bytes {}, {}",
-                encode_hex(&input_bytes),
-                e
-            ))
-        })?);
-        let array_result = JsArray::new(&mut cx, result_length);
-        // next bytes are serialized post condition items
-        let cursor = &mut &input_bytes[5..];
-        let mut i: u32 = 0;
-        while !cursor.is_empty() {
-            let post_condition =
-                TransactionPostCondition::consensus_deserialize(cursor).or_else(|e| {
-                    cx.throw_error(format!("Error deserializing post condition: {}", e))
-                })?;
-            let value_obj = cx.empty_object();
-            post_condition.neon_js_serialize(&mut cx, &value_obj, &())?;
-            array_result.set(&mut cx, i, value_obj)?;
-            i = i + 1;
-        }
-        array_result
-    } else {
-        cx.empty_array()
-    };
-    resp_obj.set(&mut cx, "post_conditions", array_result)?;
-    Ok(resp_obj)
 }
 
 fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
