@@ -217,9 +217,11 @@ fn decode_clarity_val(
 }
 
 fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let val_bytes = arg_as_bytes_copied(&mut cx, 0)?;
-    let clarity_value = clarity_value::types::Value::deserialize_read(&val_bytes)
-        .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
+    let clarity_value = arg_as_bytes(&mut cx, 0, |val_bytes| {
+        let mut cursor = Cursor::new(val_bytes);
+        clarity_value::types::Value::deserialize_read(&mut cursor).map_err(|err| err.as_string())
+    })
+    .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
 
     let root_obj = cx.empty_object();
     decode_clarity_val(&mut cx, &root_obj, &clarity_value, true)?;
@@ -229,7 +231,8 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString> {
     let type_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
-        clarity_value::types::Value::deserialize_read(&mut &val_bytes[..])
+        let mut cursor = Cursor::new(val_bytes);
+        clarity_value::types::Value::deserialize_read(&mut cursor)
             .map_err(|err| err.as_string())
             .map(|val| val.value.type_signature())
     })
@@ -239,7 +242,8 @@ fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString>
 
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let repr_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
-        clarity_value::types::Value::deserialize_read(&mut &val_bytes[..])
+        let mut cursor = Cursor::new(val_bytes);
+        clarity_value::types::Value::deserialize_read(&mut cursor)
             .map_err(|err| err.as_string())
             .map(|val| val.value.repr_string())
     })
@@ -326,11 +330,11 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
         let val_len = val_slice.len() as u64;
         let mut i: u32 = 0;
         while byte_cursor.position() < val_len - 1 {
-            let remaining_slice =
-                &byte_cursor.get_ref()[byte_cursor.position() as usize..val_len as usize];
-            let clarity_value = clarity_value::types::Value::deserialize_read(remaining_slice)
+            // let remaining_slice =
+            //     &byte_cursor.get_ref()[byte_cursor.position() as usize..val_len as usize];
+            let clarity_value = clarity_value::types::Value::deserialize_read(&mut byte_cursor)
                 .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
-            byte_cursor.set_position(byte_cursor.position() + clarity_value.serialized_bytes.len() as u64);
+            // byte_cursor.set_position(byte_cursor.position() + clarity_value.serialized_bytes.len() as u64);
             let value_obj = cx.empty_object();
             decode_clarity_val(&mut cx, &value_obj, &clarity_value, deep)?;
             array_result.set(&mut cx, i, value_obj)?;
@@ -671,8 +675,9 @@ impl NeonJsSerialize<(), Vec<u8>> for TransactionPostCondition {
                 obj.set(cx, "asset", asset_info_obj)?;
 
                 let asset_value_bytes = asset_value.serialize_to_vec();
+                let mut asset_value_cursor = Cursor::new(asset_value_bytes.as_slice());
                 let clarity_value =
-                    clarity_value::types::Value::deserialize_read(&mut &asset_value_bytes[..])
+                    clarity_value::types::Value::deserialize_read(&mut asset_value_cursor)
                         .or_else(|e| {
                             cx.throw_error(format!("Error deserializing Clarity value: {}", e))
                         })?;
@@ -978,7 +983,8 @@ impl NeonJsSerialize for TransactionContractCall {
         for (i, x) in self.function_args.iter().enumerate() {
             let val_obj = cx.empty_object();
             let mut val_bytes = x.serialize_to_vec();
-            let clarity_val = clarity_value::types::Value::deserialize_read(&mut &val_bytes[..])
+            let mut val_cursor = Cursor::new(val_bytes.as_slice());
+            let clarity_val = clarity_value::types::Value::deserialize_read(&mut val_cursor)
                 .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
             clarity_val.neon_js_serialize(
                 cx,

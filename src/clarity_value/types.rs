@@ -25,7 +25,7 @@ impl ClarityValue {
     pub fn new<T: AsRef<[u8]>>(serialized_bytes: T, value: Value) -> ClarityValue {
         ClarityValue {
             serialized_bytes: serialized_bytes.as_ref().to_vec(),
-            value
+            value,
         }
     }
 }
