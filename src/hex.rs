@@ -1,8 +1,12 @@
 pub fn decode_hex<T: AsRef<[u8]>>(data: T) -> Result<Box<[u8]>, hex_simd::Error> {
-    if data.as_ref()[0] == '0' as u8 && data.as_ref()[1] == 'x' as u8 {
-        hex_simd::decode_to_boxed_bytes(&data.as_ref()[2..])
+    let data_ref = data.as_ref();
+    let data_len = data_ref.len();
+    if data_len == 0 {
+        Ok(Box::new([0u8; 0]))
+    } else if data_len >= 2 && data_ref[0] == '0' as u8 && data_ref[1] == 'x' as u8 {
+        hex_simd::decode_to_boxed_bytes(&data_ref[2..])
     } else {
-        hex_simd::decode_to_boxed_bytes(&data.as_ref())
+        hex_simd::decode_to_boxed_bytes(data_ref)
     }
 }
 

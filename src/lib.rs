@@ -1,8 +1,8 @@
+use address::{
+    c32::{c32_address, c32_address_decode},
+    AddressHashMode,
+};
 use blockstack_lib::{
-    address::{
-        c32::{c32_address, c32_address_decode},
-        AddressHashMode,
-    },
     burnchains::bitcoin::address::BitcoinAddress,
     chainstate::stacks::{
         address::StacksAddressExtensions, MultisigSpendingCondition, SinglesigSpendingCondition,
@@ -19,7 +19,6 @@ use blockstack_lib::{
     types::{chainstate::StacksAddress, Address, StacksPublicKeyBuffer},
     vm::types::{serialization::TypePrefix, PrincipalData, StandardPrincipalData},
 };
-use clarity::vm::types::Value as ClarityValue;
 use git_version::git_version;
 use hex::{decode_hex, encode_hex};
 use lazy_static::lazy_static;
@@ -34,6 +33,7 @@ use std::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
+mod address;
 mod clarity_value;
 mod hex;
 mod unicode_printable;
@@ -964,7 +964,10 @@ impl NeonJsSerialize for StandardPrincipalData {
         address_hash_bytes.as_mut_slice(cx).copy_from_slice(&self.1);
         obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
-        let address = cx.string(self.to_address());
+        let address_string = c32_address(self.0, &self.1)
+            .or_else(|e| cx.throw_error(format!("Error converting to C32 address: {}", e)))?;
+
+        let address = cx.string(address_string);
         obj.set(cx, "address", address)?;
 
         Ok(())
