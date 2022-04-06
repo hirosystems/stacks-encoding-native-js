@@ -4,11 +4,7 @@ use std::{
     io::{Cursor, Read},
 };
 
-use crate::clarity_value;
-use crate::clarity_value::types::{
-    ClarityName, ClarityValue, ContractName, CONTRACT_MAX_NAME_LENGTH, CONTRACT_MIN_NAME_LENGTH,
-    MAX_STRING_LEN,
-};
+use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName};
 use crate::{address::stacks_address::StacksAddress, serialize_util::DeserializeError};
 
 pub enum TransactionPostCondition {
@@ -129,7 +125,7 @@ impl TransactionPostCondition {
                 let asset = AssetInfo::deserialize(fd)?;
                 let asset_value = {
                     let cursor_pos = fd.position();
-                    let mut val = clarity_value::types::Value::deserialize_read(fd, false)
+                    let mut val = ClarityValue::deserialize(fd, false)
                         .map_err(|e| format!("Error deserializing Clarity value: {}", e))?;
                     let decoded_bytes = &fd.get_ref()[cursor_pos as usize..fd.position() as usize];
                     val.serialized_bytes = Some(decoded_bytes.to_vec());
@@ -186,59 +182,6 @@ impl StacksAddress {
             version: version,
             hash160_bytes: hash160,
         })
-    }
-}
-
-impl ContractName {
-    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
-        let len_byte: u8 = fd.read_u8()?;
-        if (len_byte as usize) < CONTRACT_MIN_NAME_LENGTH
-            || (len_byte as usize) > CONTRACT_MAX_NAME_LENGTH
-        {
-            return Err(format!(
-                "Failed to deserialize contract name: too short or too long: {}",
-                len_byte
-            ))?;
-        }
-        let mut bytes = vec![0u8; len_byte as usize];
-        fd.read_exact(&mut bytes)?;
-
-        let s = String::from_utf8(bytes).map_err(|e| {
-            format!(
-                "Failed to parse Contract name: could not construct from utf8: {}",
-                e
-            )
-        })?;
-
-        let name = ContractName::try_from(s)
-            .map_err(|e| format!("Failed to parse Contract name: {:?}", e))?;
-
-        Ok(name)
-    }
-}
-
-impl ClarityName {
-    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
-        let len_byte = fd.read_u8()?;
-        if len_byte > MAX_STRING_LEN {
-            return Err(format!(
-                "Failed to deserialize clarity name: too long: {}",
-                len_byte,
-            ))?;
-        }
-        let mut bytes = vec![0u8; len_byte as usize];
-        fd.read_exact(&mut bytes)?;
-
-        let s = String::from_utf8(bytes).map_err(|e| {
-            format!(
-                "Failed to parse Clarity name: could not contruct from utf8: {}",
-                e
-            )
-        })?;
-
-        let name = ClarityName::try_from(s)
-            .map_err(|e| format!("Failed to parse Clarity name: {:?}", e))?;
-        Ok(name)
     }
 }
 

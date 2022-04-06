@@ -6,8 +6,8 @@ use neon::types::buffer::TypedArray;
 use crate::address::c32::c32_address;
 use crate::address::stacks_address::StacksAddress;
 use crate::address::AddressHashMode;
+use crate::clarity_value::deserialize::TypePrefix;
 use crate::clarity_value::neon_encoder::decode_clarity_val;
-use crate::clarity_value::serder::TypePrefix;
 use crate::hex::encode_hex;
 use crate::neon_util::NeonJsSerialize;
 

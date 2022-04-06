@@ -2,8 +2,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 use std::io::{Cursor, Read};
 
 use crate::address::stacks_address::StacksAddress;
-use crate::clarity_value::serder::TypePrefix;
-use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName, Value};
+use crate::clarity_value::deserialize::TypePrefix;
+use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName};
 use crate::post_condition::deserialize::TransactionPostCondition;
 use crate::serialize_util::DeserializeError;
 
@@ -385,7 +385,7 @@ impl TransactionContractCall {
             let len = fd.read_u32::<BigEndian>()?;
             let mut results: Vec<ClarityValue> = Vec::with_capacity(len as usize);
             for _ in 0..len {
-                results.push(Value::deserialize_read(fd, true)?);
+                results.push(ClarityValue::deserialize(fd, true)?);
             }
             results
         };

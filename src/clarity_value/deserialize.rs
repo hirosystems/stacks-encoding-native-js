@@ -1,6 +1,7 @@
+use byteorder::ReadBytesExt;
+
 use super::types::*;
 use std::collections::BTreeMap;
-use std::convert::TryFrom;
 use std::io::{Cursor, Read};
 
 use crate::serialize_util::DeserializeError;
@@ -14,8 +15,6 @@ macro_rules! define_u8_enum {
             $($Variant = $Val),*,
         }
         impl $Name {
-            // pub const ALL: &'static [$Name] = &[$($Name::$Variant),*];
-
             pub fn to_u8(&self) -> u8 {
                 match self {
                     $(
@@ -54,47 +53,56 @@ define_u8_enum!(TypePrefix {
     StringUTF8 = 14
 });
 
-macro_rules! serialize_guarded_string {
-    ($Name:ident) => {
-        impl $Name {
-            /*
-            fn serialize_write<W: Write>(&self, w: &mut W) -> std::io::Result<()> {
-                w.write_all(&self.len().to_be_bytes())?;
-                w.write_all(self.as_str().as_bytes())
-            }
-            */
-
-            fn deserialize_read<R: Read>(r: &mut R) -> Result<Self, DeserializeError> {
-                let mut len = [0; 1];
-                r.read_exact(&mut len)?;
-                let len = u8::from_be_bytes(len);
-                if len > MAX_STRING_LEN {
-                    return Err("String too long".into());
-                }
-
-                let mut data = vec![0; len as usize];
-                r.read_exact(&mut data)?;
-
-                String::from_utf8(data)
-                    .map_err(|_| "Non-UTF8 string data".into())
-                    .and_then(|x| $Name::try_from(x).map_err(|_| "Illegal Clarity string".into()))
-            }
+impl ContractName {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+        let len_byte: u8 = fd.read_u8()?;
+        if (len_byte as usize) < CONTRACT_MIN_NAME_LENGTH
+            || (len_byte as usize) > CONTRACT_MAX_NAME_LENGTH
+        {
+            return Err(format!(
+                "Failed to deserialize contract name: too short or too long: {}",
+                len_byte
+            ))?;
         }
-    };
+        let mut bytes = vec![0u8; len_byte as usize];
+        fd.read_exact(&mut bytes)?;
+
+        let s = String::from_utf8(bytes).map_err(|e| {
+            format!(
+                "Failed to parse Contract name: could not construct from utf8: {}",
+                e
+            )
+        })?;
+
+        Ok(ContractName(s))
+    }
 }
 
-serialize_guarded_string!(ClarityName);
-serialize_guarded_string!(ContractName);
+impl ClarityName {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+        let len_byte = fd.read_u8()?;
+        if len_byte > MAX_STRING_LEN {
+            return Err(format!(
+                "Failed to deserialize clarity name: too long: {}",
+                len_byte,
+            ))?;
+        }
+        let mut bytes = vec![0u8; len_byte as usize];
+        fd.read_exact(&mut bytes)?;
+
+        let s = String::from_utf8(bytes).map_err(|e| {
+            format!(
+                "Failed to parse Clarity name: could not contruct from utf8: {}",
+                e
+            )
+        })?;
+
+        Ok(ClarityName(s))
+    }
+}
 
 impl StandardPrincipalData {
-    /*
-    fn serialize_write<W: Write>(&self, w: &mut W) -> std::io::Result<()> {
-        w.write_all(&[self.0])?;
-        w.write_all(&self.1)
-    }
-    */
-
-    fn deserialize_read<R: Read>(r: &mut R) -> Result<Self, DeserializeError> {
+    fn deserialize(r: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let mut version = [0; 1];
         let mut data = [0; 20];
         r.read_exact(&mut version)?;
@@ -103,19 +111,12 @@ impl StandardPrincipalData {
     }
 }
 
-#[allow(dead_code)]
-fn get_cursor_slice<'a>(start_position: usize, cursor: &'a Cursor<&[u8]>) -> &'a [u8] {
-    let cur_position = cursor.position() as usize;
-    let inner = cursor.get_ref();
-    &inner[start_position..cur_position]
-}
-
-impl Value {
-    pub fn deserialize_read(
+impl ClarityValue {
+    pub fn deserialize(
         r: &mut Cursor<&[u8]>,
         with_bytes: bool,
     ) -> Result<ClarityValue, DeserializeError> {
-        Value::inner_deserialize_read(r, 0, with_bytes)
+        Self::inner_deserialize_read(r, 0, with_bytes)
     }
 
     fn inner_deserialize_read(
@@ -161,25 +162,25 @@ impl Value {
             TypePrefix::BoolTrue => Bool(true),
             TypePrefix::BoolFalse => Bool(false),
             TypePrefix::PrincipalStandard => {
-                let principal = StandardPrincipalData::deserialize_read(r)?;
+                let principal = StandardPrincipalData::deserialize(r)?;
                 Value::PrincipalStandard(principal)
             }
             TypePrefix::PrincipalContract => {
-                let issuer = StandardPrincipalData::deserialize_read(r)?;
-                let name = ContractName::deserialize_read(r)?;
+                let issuer = StandardPrincipalData::deserialize(r)?;
+                let name = ContractName::deserialize(r)?;
                 Value::PrincipalContract(QualifiedContractIdentifier { issuer, name })
             }
             TypePrefix::ResponseOk => {
-                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                let value = Self::inner_deserialize_read(r, depth + 1, with_bytes)?;
                 Value::ResponseOk(Box::new(value))
             }
             TypePrefix::ResponseErr => {
-                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                let value = Self::inner_deserialize_read(r, depth + 1, with_bytes)?;
                 Value::ResponseErr(Box::new(value))
             }
             TypePrefix::OptionalNone => Value::OptionalNone,
             TypePrefix::OptionalSome => {
-                let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                let value = Self::inner_deserialize_read(r, depth + 1, with_bytes)?;
                 Value::OptionalSome(Box::new(value))
             }
             TypePrefix::List => {
@@ -191,9 +192,7 @@ impl Value {
                 }
                 let mut items = Vec::with_capacity(len as usize);
                 for _i in 0..len {
-                    // let remaining = &r.get_ref()[r.position() as usize..];
-                    let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
-                    // r.set_position(r.position() + value.serialized_bytes.len() as u64);
+                    let value = Self::inner_deserialize_read(r, depth + 1, with_bytes)?;
                     items.push(value);
                 }
                 Value::List(items)
@@ -207,8 +206,8 @@ impl Value {
                 }
                 let mut data = BTreeMap::new();
                 for _i in 0..len {
-                    let key = ClarityName::deserialize_read(r)?;
-                    let value = Value::inner_deserialize_read(r, depth + 1, with_bytes)?;
+                    let key = ClarityName::deserialize(r)?;
+                    let value = Self::inner_deserialize_read(r, depth + 1, with_bytes)?;
                     data.insert(key, value);
                 }
                 Value::Tuple(data)

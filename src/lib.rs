@@ -3,7 +3,7 @@ use address::{
     c32::{c32_address, c32_address_decode},
     stacks_address,
 };
-use clarity_value::neon_encoder::decode_clarity_val;
+use clarity_value::{neon_encoder::decode_clarity_val, types::ClarityValue};
 use git_version::git_version;
 use lazy_static::lazy_static;
 use neon::{prelude::*, types::buffer::TypedArray};
@@ -38,7 +38,7 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
     let val_bytes = arg_as_bytes_copied(&mut cx, 0)?;
 
     let mut cursor: Cursor<&[u8]> = Cursor::new(&val_bytes);
-    let clarity_value = clarity_value::types::Value::deserialize_read(&mut cursor, true)
+    let clarity_value = ClarityValue::deserialize(&mut cursor, true)
         .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
 
     let root_obj = cx.empty_object();
@@ -50,7 +50,7 @@ fn decode_clarity_value(mut cx: FunctionContext) -> JsResult<JsObject> {
 fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString> {
     let type_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
         let mut cursor = Cursor::new(val_bytes);
-        clarity_value::types::Value::deserialize_read(&mut cursor, false)
+        ClarityValue::deserialize(&mut cursor, false)
             .map_err(|err| err.as_string())
             .map(|val| val.value.type_signature())
     })
@@ -61,7 +61,7 @@ fn decode_clarity_value_type_name(mut cx: FunctionContext) -> JsResult<JsString>
 fn decode_clarity_value_to_repr(mut cx: FunctionContext) -> JsResult<JsString> {
     let repr_string = arg_as_bytes(&mut cx, 0, |val_bytes| {
         let mut cursor = Cursor::new(val_bytes);
-        clarity_value::types::Value::deserialize_read(&mut cursor, false)
+        ClarityValue::deserialize(&mut cursor, false)
             .map_err(|err| err.as_string())
             .map(|val| val.value.repr_string())
     })
@@ -94,10 +94,8 @@ fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> {
         let mut i: u32 = 0;
         while byte_cursor.position() < val_len - 1 {
             let cursor_pos = byte_cursor.position();
-            let clarity_value =
-                clarity_value::types::Value::deserialize_read(&mut byte_cursor, deep).or_else(
-                    |e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)),
-                )?;
+            let clarity_value = ClarityValue::deserialize(&mut byte_cursor, deep)
+                .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
             let decoded_bytes =
                 &byte_cursor.get_ref()[cursor_pos as usize..byte_cursor.position() as usize];
             let value_obj = cx.empty_object();

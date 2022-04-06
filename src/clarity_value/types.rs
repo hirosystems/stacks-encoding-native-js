@@ -10,7 +10,7 @@ use std::ops::Deref;
 use crate::address::c32::c32_address;
 use crate::hex::{encode_hex, encode_hex_no_prefix};
 
-use super::serder::TypePrefix;
+use super::deserialize::TypePrefix;
 
 pub const MAX_STRING_LEN: u8 = 128;
 pub const MAX_VALUE_SIZE: u32 = 1024 * 1024; // 1MB
@@ -246,7 +246,7 @@ pub struct QualifiedContractIdentifier {
 macro_rules! guarded_string {
     ($Name:ident, $Label:literal, $Regex:expr) => {
         #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-        pub struct $Name(String);
+        pub struct $Name(pub String);
         impl TryFrom<String> for $Name {
             type Error = String;
             fn try_from(value: String) -> Result<Self, Self::Error> {
