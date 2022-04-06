@@ -4,12 +4,12 @@ use std::{
     io::{Cursor, Read},
 };
 
-use crate::address::stacks_address::StacksAddress;
 use crate::clarity_value;
 use crate::clarity_value::types::{
     ClarityName, ClarityValue, ContractName, CONTRACT_MAX_NAME_LENGTH, CONTRACT_MIN_NAME_LENGTH,
     MAX_STRING_LEN,
 };
+use crate::{address::stacks_address::StacksAddress, serialize_util::DeserializeError};
 
 pub enum TransactionPostCondition {
     STX(PostConditionPrincipal, FungibleConditionCode, u64),
@@ -95,23 +95,6 @@ pub enum AssetInfoID {
     NonfungibleAsset = 2,
 }
 
-#[derive(Debug)]
-pub struct DeserializeError {
-    pub error: String,
-}
-
-impl From<String> for DeserializeError {
-    fn from(error: String) -> Self {
-        DeserializeError { error }
-    }
-}
-
-impl From<std::io::Error> for DeserializeError {
-    fn from(error: std::io::Error) -> Self {
-        format!("Deserialize error: {}", error).into()
-    }
-}
-
 impl TransactionPostCondition {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let asset_info_id: u8 = fd.read_u8()?;
@@ -195,7 +178,7 @@ impl PostConditionPrincipal {
 }
 
 impl StacksAddress {
-    fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let version: u8 = fd.read_u8()?;
         let mut hash160 = [0u8; 20];
         fd.read_exact(&mut hash160)?;
@@ -207,7 +190,7 @@ impl StacksAddress {
 }
 
 impl ContractName {
-    fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let len_byte: u8 = fd.read_u8()?;
         if (len_byte as usize) < CONTRACT_MIN_NAME_LENGTH
             || (len_byte as usize) > CONTRACT_MAX_NAME_LENGTH
@@ -235,7 +218,7 @@ impl ContractName {
 }
 
 impl ClarityName {
-    fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let len_byte = fd.read_u8()?;
         if len_byte > MAX_STRING_LEN {
             return Err(format!(

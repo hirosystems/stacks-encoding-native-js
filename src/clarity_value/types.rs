@@ -1,4 +1,3 @@
-use blockstack_lib::address::c32::c32_address;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::borrow::Borrow;
@@ -8,6 +7,7 @@ use std::fmt;
 use std::io::Write;
 use std::ops::Deref;
 
+use crate::address::c32::c32_address;
 use crate::hex::{encode_hex, encode_hex_no_prefix};
 
 use super::serder::TypePrefix;

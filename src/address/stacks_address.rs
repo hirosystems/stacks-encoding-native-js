@@ -6,6 +6,13 @@ pub struct StacksAddress {
 }
 
 impl StacksAddress {
+    pub fn new(version: u8, hash160_bytes: [u8; 20]) -> Self {
+        Self {
+            version,
+            hash160_bytes,
+        }
+    }
+
     pub fn from_string(s: &str) -> Result<StacksAddress, String> {
         let (version, bytes) = match c32_address_decode(s) {
             Ok((v, b)) => (v, b),

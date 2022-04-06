@@ -16,15 +16,7 @@ debug = true
 [lib]
 crate-type = ["cdylib"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-# Use stacks-blockchain develop branch (commit hash as of 2022-03-01)
-# Updated to `feat/c32-optimizations` branch https://github.com/stacks-network/stacks-blockchain/pull/3075
-stacks-common = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
-clarity = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
-blockstack-core = { git = "https://github.com/stacks-network/stacks-blockchain", branch = "feat/c32-optimizations" }
-
 hex-simd = { version = "0.5.0" }
 simd-abstraction = { version = "0.5.0", features = ["alloc", "std"] }
 regex = "1.5"
@@ -34,6 +26,7 @@ lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
 rand = "0.8.5"
 byteorder = "1.4.3"
+secp256k1 = { version = "0.21.1" }
 
 [dependencies.pprof]
 # git = "https://github.com/YangKeao/pprof-rs"

@@ -3,25 +3,24 @@ use address::{
     c32::{c32_address, c32_address_decode},
     stacks_address,
 };
-use blockstack_lib::chainstate::stacks::TransactionPostCondition;
 use clarity_value::neon_encoder::decode_clarity_val;
 use git_version::git_version;
-use hex::encode_hex;
 use lazy_static::lazy_static;
 use neon::{prelude::*, types::buffer::TypedArray};
 use neon_util::*;
 use regex::Regex;
-use stacks_common::codec::StacksMessageCodec;
 use std::{convert::TryInto, io::Cursor, sync::Mutex};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{post_condition::decode_tx_post_conditions, stacks_tx::decode_transaction};
+use crate::post_condition::decode_tx_post_conditions;
+use crate::stacks_tx::decode_transaction;
 
 mod address;
 mod clarity_value;
 mod hex;
 mod neon_util;
 mod post_condition;
+mod serialize_util;
 mod stacks_tx;
 mod unicode_printable;
 
@@ -273,6 +272,7 @@ fn perf_test_c32_decode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hex::encode_hex;
 
     #[test]
     fn test_hex_encode() {

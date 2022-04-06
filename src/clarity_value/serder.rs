@@ -1,40 +1,9 @@
 use super::types::*;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use std::fmt::Display;
 use std::io::{Cursor, Read};
 
-pub struct DeserializeError(pub String);
-
-impl DeserializeError {
-    pub fn as_string(self) -> String {
-        self.0
-    }
-}
-
-impl From<std::io::Error> for DeserializeError {
-    fn from(err: std::io::Error) -> Self {
-        format!("Serialization error: {:?}", err).into()
-    }
-}
-
-impl From<String> for DeserializeError {
-    fn from(err: String) -> Self {
-        DeserializeError(err)
-    }
-}
-
-impl From<&str> for DeserializeError {
-    fn from(err: &str) -> Self {
-        DeserializeError(err.to_string())
-    }
-}
-
-impl Display for DeserializeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0)
-    }
-}
+use crate::serialize_util::DeserializeError;
 
 macro_rules! define_u8_enum {
     ($Name:ident { $($Variant:ident = $Val:literal),+ }) =>

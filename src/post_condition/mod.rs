@@ -6,8 +6,8 @@ use crate::neon_util::arg_as_bytes_copied;
 
 use self::deserialize::TransactionPostCondition;
 
-mod deserialize;
-mod neon_encoder;
+pub mod deserialize;
+pub mod neon_encoder;
 
 pub fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> {
     let input_bytes = arg_as_bytes_copied(&mut cx, 0)?;
