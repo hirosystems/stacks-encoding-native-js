@@ -1,9 +1,6 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io::{Cursor, Read};
 
-use secp256k1::constants as LibSecp256k1Constants;
-use secp256k1::PublicKey as LibSecp256k1PublicKey;
-
 use crate::address::stacks_address::StacksAddress;
 use crate::clarity_value::serder::TypePrefix;
 use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName, Value};
@@ -219,7 +216,7 @@ impl MultisigSpendingCondition {
                     }
                 }
                 TransactionAuthField::PublicKey(ref pubk) => {
-                    if !pubk.compressed() {
+                    if !pubk.compressed {
                         have_uncompressed = true;
                     }
                 }
@@ -260,19 +257,19 @@ impl TransactionAuthField {
                 let mut pubkey_bytes = [0u8; 33];
                 fd.read_exact(&mut pubkey_bytes)?;
                 let pubkey_buf = StacksPublicKeyBuffer(pubkey_bytes);
-                let mut pubkey = pubkey_buf.to_public_key()?;
-                pubkey.set_compressed(true);
-
-                TransactionAuthField::PublicKey(pubkey)
+                TransactionAuthField::PublicKey(Secp256k1PublicKey {
+                    compressed: true,
+                    key: pubkey_buf,
+                })
             }
             x if x == TransactionAuthFieldID::PublicKeyUncompressed as u8 => {
                 let mut pubkey_bytes = [0u8; 33];
                 fd.read_exact(&mut pubkey_bytes)?;
                 let pubkey_buf = StacksPublicKeyBuffer(pubkey_bytes);
-                let mut pubkey = pubkey_buf.to_public_key()?;
-                pubkey.set_compressed(false);
-
-                TransactionAuthField::PublicKey(pubkey)
+                TransactionAuthField::PublicKey(Secp256k1PublicKey {
+                    compressed: false,
+                    key: pubkey_buf,
+                })
             }
             x if x == TransactionAuthFieldID::SignatureCompressed as u8 => {
                 let mut sig_bytes = [0u8; 65];
@@ -331,47 +328,9 @@ impl TransactionPublicKeyEncoding {
     }
 }
 
-impl StacksPublicKeyBuffer {
-    pub fn from_public_key(pubkey: &Secp256k1PublicKey) -> StacksPublicKeyBuffer {
-        let pubkey_bytes_vec = pubkey.to_bytes_compressed();
-        let mut pubkey_bytes = [0u8; 33];
-        pubkey_bytes.copy_from_slice(&pubkey_bytes_vec[..]);
-        StacksPublicKeyBuffer(pubkey_bytes)
-    }
-
-    pub fn to_public_key(&self) -> Result<Secp256k1PublicKey, DeserializeError> {
-        Secp256k1PublicKey::from_slice(&self.0)
-            .map_err(|e| format!("Failed to decode Stacks public key: {}", e).into())
-    }
-}
-
 pub struct Secp256k1PublicKey {
-    key: LibSecp256k1PublicKey,
-    compressed: bool,
-}
-
-impl Secp256k1PublicKey {
-    pub fn to_bytes_compressed(&self) -> Vec<u8> {
-        self.key.serialize().to_vec()
-    }
-
-    pub fn compressed(&self) -> bool {
-        self.compressed
-    }
-
-    pub fn set_compressed(&mut self, value: bool) {
-        self.compressed = value;
-    }
-
-    pub fn from_slice(data: &[u8]) -> Result<Secp256k1PublicKey, DeserializeError> {
-        match LibSecp256k1PublicKey::from_slice(data) {
-            Ok(pubkey_res) => Ok(Secp256k1PublicKey {
-                key: pubkey_res,
-                compressed: data.len() == LibSecp256k1Constants::PUBLIC_KEY_SIZE,
-            }),
-            Err(e) => Err(format!("Invalid public key: failed to load: {}", e).into()),
-        }
-    }
+    pub key: StacksPublicKeyBuffer,
+    pub compressed: bool,
 }
 
 impl TransactionPayload {
@@ -430,15 +389,6 @@ impl TransactionContractCall {
             }
             results
         };
-
-        /*
-        // function name must be valid Clarity variable
-        if !StacksString::from(function_name.clone()).is_clarity_variable() {
-            return Err(format!(
-                "Failed to parse transaction: invalid function name -- not a Clarity variable"
-            ))?;
-        }
-        */
 
         Ok(TransactionContractCall {
             address,

@@ -26,7 +26,6 @@ lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
 rand = "0.8.5"
 byteorder = "1.4.3"
-secp256k1 = { version = "0.21.1" }
 
 [dependencies.pprof]
 # git = "https://github.com/YangKeao/pprof-rs"
