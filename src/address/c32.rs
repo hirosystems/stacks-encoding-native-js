@@ -1,5 +1,3 @@
-use super::Error;
-
 use sha2::Digest;
 use sha2::Sha256;
 use std::convert::TryFrom;
@@ -36,6 +34,7 @@ const C32_CHARACTERS_MAP: [i8; 128] = [
     31, -1, -1, -1, -1, -1,
 ];
 
+#[allow(dead_code)]
 fn c32_encode(input_bytes: &[u8]) -> String {
     let capacity = get_max_c32_encode_output_len(input_bytes.len());
     let mut buffer: Vec<u8> = vec![0; capacity];
@@ -69,14 +68,14 @@ fn get_max_c32_encode_output_len(input_len: usize) -> usize {
 /// buffer.truncate(bytes_written);
 /// String::from_utf8(buffer)
 /// ```
-fn c32_encode_to_buffer(input_bytes: &[u8], output_buffer: &mut [u8]) -> Result<usize, Error> {
+fn c32_encode_to_buffer(input_bytes: &[u8], output_buffer: &mut [u8]) -> Result<usize, String> {
     let min_len = get_max_c32_encode_output_len(input_bytes.len());
     if output_buffer.len() < min_len {
-        Err(Error::Other(format!(
+        Err(format!(
             "C32 encode output buffer is too small, given size {}, need minimum size {}",
             output_buffer.len(),
             min_len
-        )))?
+        ))?
     }
     let mut carry = 0;
     let mut carry_bits = 0;
@@ -128,15 +127,16 @@ fn c32_encode_to_buffer(input_bytes: &[u8], output_buffer: &mut [u8]) -> Result<
     Ok(position)
 }
 
-fn c32_decode(input_str: &str) -> Result<Vec<u8>, Error> {
+#[allow(dead_code)]
+fn c32_decode(input_str: &str) -> Result<Vec<u8>, String> {
     // must be ASCII
     if !input_str.is_ascii() {
-        return Err(Error::InvalidCrockford32);
+        return Err("Invalid crockford 32 string".into());
     }
     c32_decode_ascii(input_str.as_bytes())
 }
 
-fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, Error> {
+fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, String> {
     // let initial_capacity = 1 + ((input_str.len() * 5) / 8);
     let initial_capacity = input_str.len();
     let mut result = Vec::with_capacity(initial_capacity);
@@ -149,9 +149,9 @@ fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, Error> {
         c32_digits[i] = match C32_CHARACTERS_MAP.get(*x as usize) {
             Some(v) => match u8::try_from(*v) {
                 Ok(v) => Ok(v),
-                Err(_) => Err(Error::InvalidCrockford32),
+                Err(_) => Err("Invalid crockford 32 string".to_string()),
             },
-            None => Err(Error::InvalidCrockford32),
+            None => Err("Invalid crockford 32 string".to_string()),
         }?;
     }
 
@@ -190,9 +190,9 @@ fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, Error> {
     Ok(result)
 }
 
-fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<String, Error> {
+fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<String, String> {
     if version >= 32 {
-        return Err(Error::InvalidVersion(version));
+        return Err(format!("Invalid version {}", version));
     }
 
     let data_len = data.len();
@@ -219,17 +219,17 @@ fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<Str
     Ok(str_result)
 }
 
-fn c32_check_decode<TOutput>(check_data_unsanitized: &str) -> Result<(u8, TOutput), Error>
+fn c32_check_decode<TOutput>(check_data_unsanitized: &str) -> Result<(u8, TOutput), String>
 where
     TOutput: for<'a> TryFrom<&'a [u8]>,
 {
     // must be ASCII
     if !check_data_unsanitized.is_ascii() {
-        return Err(Error::InvalidCrockford32);
+        return Err("Invalid crockford 32 string, must be ascii".to_string());
     }
 
     if check_data_unsanitized.len() < 2 {
-        return Err(Error::InvalidCrockford32);
+        return Err("Invalid crockford 32 string, size less than 2".to_string());
     }
 
     let ascii_bytes = check_data_unsanitized.as_bytes();
@@ -237,7 +237,7 @@ where
 
     let data_sum_bytes = c32_decode_ascii(data)?;
     if data_sum_bytes.len() < 4 {
-        return Err(Error::InvalidCrockford32);
+        return Err("Invalid crockford 32 string, decoded byte length less than 4".to_string());
     }
 
     let (data_bytes, expected_sum) = data_sum_bytes.split_at(data_sum_bytes.len() - 4);
@@ -265,25 +265,28 @@ where
             | ((expected_sum[2] as u32) << 16)
             | ((expected_sum[3] as u32) << 24);
 
-        return Err(Error::BadChecksum(computed_sum_u32, expected_sum_u32));
+        return Err(format!(
+            "base58ck checksum 0x{:x} does not match expected 0x{:x}",
+            computed_sum_u32, expected_sum_u32
+        ));
     }
 
     let version = decoded_version[0];
     let data: TOutput = data_bytes
         .try_into()
-        .map_err(|_| Error::InvalidCrockford32)?;
+        .map_err(|_| format!("Could not convert decoded c32 bytes"))?;
     Ok((version, data))
 }
 
-pub fn c32_address_decode(c32_address_str: &str) -> Result<(u8, [u8; 20]), Error> {
+pub fn c32_address_decode(c32_address_str: &str) -> Result<(u8, [u8; 20]), String> {
     if c32_address_str.len() <= 5 {
-        Err(Error::InvalidCrockford32)
+        Err("Invalid crockford 32 string, address string smaller than 5 bytes".into())
     } else {
         c32_check_decode(&c32_address_str[1..])
     }
 }
 
-pub fn c32_address(version: u8, data: &[u8]) -> Result<String, Error> {
+pub fn c32_address(version: u8, data: &[u8]) -> Result<String, String> {
     c32_check_encode_prefixed(version, data, b'S')
 }
 
@@ -455,7 +458,7 @@ mod test {
     #[test]
     fn test_ascii_only() {
         match c32_address_decode("S\u{1D7D8}2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKPVKG2CE") {
-            Err(Error::InvalidCrockford32) => {}
+            Err(_) => {}
             _ => {
                 assert!(false);
             }

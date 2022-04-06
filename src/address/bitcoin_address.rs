@@ -13,6 +13,7 @@ pub enum BitcoinAddressType {
 pub enum BitcoinNetworkType {
     Mainnet,
     Testnet,
+    #[allow(dead_code)]
     Regtest,
 }
 

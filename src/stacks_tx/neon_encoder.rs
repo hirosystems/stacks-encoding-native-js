@@ -4,8 +4,7 @@ use neon::prelude::*;
 use neon::types::buffer::TypedArray;
 
 use crate::address::c32::c32_address;
-use crate::address::stacks_address::StacksAddress;
-use crate::address::AddressHashMode;
+use crate::address::stacks_address::{AddressHashMode, StacksAddress};
 use crate::clarity_value::deserialize::TypePrefix;
 use crate::clarity_value::neon_encoder::decode_clarity_val;
 use crate::hex::encode_hex;

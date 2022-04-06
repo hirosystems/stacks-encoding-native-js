@@ -18,8 +18,6 @@ use std::{fmt, str};
 
 use sha2::{Digest, Sha256};
 
-use super::Error;
-
 static BASE58_CHARS: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 static BASE58_DIGITS: [Option<u8>; 128] = [
@@ -154,19 +152,19 @@ static BASE58_DIGITS: [Option<u8>; 128] = [
 ];
 
 /// Decode base58-encoded string into a byte vector
-pub fn from(data: &str) -> Result<Vec<u8>, Error> {
+pub fn from(data: &str) -> Result<Vec<u8>, String> {
     // 11/15 is just over log_256(58)
     let mut scratch = vec![0u8; 1 + data.len() * 11 / 15];
     // Build in base 256
     for d58 in data.bytes() {
         // Compute "X = X * 58 + next_digit" in base 256
         if d58 as usize > BASE58_DIGITS.len() {
-            return Err(Error::BadByte(d58));
+            return Err(format!("invalid base58 character 0x{:x}", d58));
         }
         let mut carry = match BASE58_DIGITS[d58 as usize] {
             Some(d58) => d58 as u32,
             None => {
-                return Err(Error::BadByte(d58));
+                return Err(format!("invalid base58 character 0x{:x}", d58));
             }
         };
         for d256 in scratch.iter_mut().rev() {
@@ -194,10 +192,10 @@ pub fn get_checksum(data: &[u8]) -> u32 {
 }
 
 /// Decode a base58check-encoded string
-pub fn from_check(data: &str) -> Result<Vec<u8>, Error> {
+pub fn from_check(data: &str) -> Result<Vec<u8>, String> {
     let mut ret: Vec<u8> = from(data)?;
     if ret.len() < 4 {
-        return Err(Error::TooShort(ret.len()));
+        return Err(format!("base58ck data not even long enough for a checksum"));
     }
     let ck_start = ret.len() - 4;
     let expected = get_checksum(&ret[..ck_start]);
@@ -207,7 +205,10 @@ pub fn from_check(data: &str) -> Result<Vec<u8>, Error> {
     let actual = u32::from_le_bytes(actual_buff);
 
     if expected != actual {
-        return Err(Error::BadChecksum(expected, actual));
+        return Err(format!(
+            "base58ck checksum 0x{:x} does not match expected 0x{:x}",
+            expected, actual
+        ));
     }
 
     ret.truncate(ck_start);
@@ -265,6 +266,7 @@ where
 }
 
 /// Directly encode a slice as base58 into a `Formatter`.
+#[allow(dead_code)]
 fn encode_iter_to_fmt<I>(fmt: &mut fmt::Formatter, data: I) -> fmt::Result
 where
     I: Iterator<Item = u8> + Clone,
@@ -274,6 +276,7 @@ where
 }
 
 /// Directly encode a slice as base58
+#[allow(dead_code)]
 pub fn encode_slice(data: &[u8]) -> String {
     encode_iter(data.iter().cloned())
 }
@@ -287,6 +290,7 @@ pub fn check_encode_slice(data: &[u8]) -> String {
 
 /// Obtain a string with the base58check encoding of a slice
 /// (Tack the first 4 256-digits of the object's Bitcoin hash onto the end.)
+#[allow(dead_code)]
 pub fn check_encode_slice_to_fmt(fmt: &mut fmt::Formatter, data: &[u8]) -> fmt::Result {
     let checksum = Sha256::digest(Sha256::digest(data));
     let iter = data.iter().cloned().chain(checksum[0..4].iter().cloned());

@@ -1,5 +1,4 @@
 use git_version::git_version;
-use lazy_static::lazy_static;
 use neon::prelude::*;
 
 use crate::address::{
@@ -34,7 +33,7 @@ fn get_version(mut cx: FunctionContext) -> JsResult<JsString> {
 }
 
 #[cfg(feature = "profiling")]
-lazy_static! {
+lazy_static::lazy_static! {
     static ref PROFILER: std::sync::Mutex<Option<pprof::ProfilerGuard<'static>>> =
         std::sync::Mutex::new(None);
 }

@@ -1,4 +1,11 @@
+use std::convert::TryFrom;
+
 use super::c32::c32_address_decode;
+
+pub const C32_ADDRESS_VERSION_MAINNET_SINGLESIG: u8 = 22; // P
+pub const C32_ADDRESS_VERSION_MAINNET_MULTISIG: u8 = 20; // M
+pub const C32_ADDRESS_VERSION_TESTNET_SINGLESIG: u8 = 26; // T
+pub const C32_ADDRESS_VERSION_TESTNET_MULTISIG: u8 = 21; // N
 
 pub struct StacksAddress {
     pub version: u8,
@@ -25,5 +32,49 @@ impl StacksAddress {
             version: version,
             hash160_bytes: bytes,
         })
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum AddressHashMode {
+    // serialization modes for public keys to addresses.
+    // We support four different modes due to legacy compatibility with Stacks v1 addresses:
+    SerializeP2PKH = 0x00,  // hash160(public-key), same as bitcoin's p2pkh
+    SerializeP2SH = 0x01,   // hash160(multisig-redeem-script), same as bitcoin's multisig p2sh
+    SerializeP2WPKH = 0x02, // hash160(segwit-program-00(p2pkh)), same as bitcoin's p2sh-p2wpkh
+    SerializeP2WSH = 0x03,  // hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh
+}
+
+impl AddressHashMode {
+    pub fn to_version_mainnet(&self) -> u8 {
+        match *self {
+            AddressHashMode::SerializeP2PKH => C32_ADDRESS_VERSION_MAINNET_SINGLESIG,
+            _ => C32_ADDRESS_VERSION_MAINNET_MULTISIG,
+        }
+    }
+
+    pub fn to_version_testnet(&self) -> u8 {
+        match *self {
+            AddressHashMode::SerializeP2PKH => C32_ADDRESS_VERSION_TESTNET_SINGLESIG,
+            _ => C32_ADDRESS_VERSION_TESTNET_MULTISIG,
+        }
+    }
+}
+
+/// Given the u8 of an AddressHashMode, deduce the AddressHashNode
+impl TryFrom<u8> for AddressHashMode {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<AddressHashMode, Self::Error> {
+        match value {
+            x if x == AddressHashMode::SerializeP2PKH as u8 => Ok(AddressHashMode::SerializeP2PKH),
+            x if x == AddressHashMode::SerializeP2SH as u8 => Ok(AddressHashMode::SerializeP2SH),
+            x if x == AddressHashMode::SerializeP2WPKH as u8 => {
+                Ok(AddressHashMode::SerializeP2WPKH)
+            }
+            x if x == AddressHashMode::SerializeP2WSH as u8 => Ok(AddressHashMode::SerializeP2WSH),
+            _ => Err(format!("Invalid version {}", value)),
+        }
     }
 }
