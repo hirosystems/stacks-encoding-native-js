@@ -1,4 +1,4 @@
-use crate::c32_address_decode;
+use super::c32::c32_address_decode;
 
 pub struct StacksAddress {
     pub version: u8,

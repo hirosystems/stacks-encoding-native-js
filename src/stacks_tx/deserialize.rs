@@ -328,11 +328,6 @@ impl TransactionPublicKeyEncoding {
     }
 }
 
-pub struct Secp256k1PublicKey {
-    pub key: StacksPublicKeyBuffer,
-    pub compressed: bool,
-}
-
 impl TransactionPayload {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let type_id = fd.read_u8()?;
@@ -555,6 +550,11 @@ pub enum SinglesigHashMode {
 pub struct StacksPublicKeyBuffer(pub [u8; 33]);
 
 pub struct MessageSignature(pub [u8; 65]);
+
+pub struct Secp256k1PublicKey {
+    pub key: StacksPublicKeyBuffer,
+    pub compressed: bool,
+}
 
 pub enum TransactionAuthField {
     PublicKey(Secp256k1PublicKey),

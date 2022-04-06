@@ -29,3 +29,16 @@ pub fn encode_hex(data: &[u8]) -> Box<str> {
 pub fn encode_hex_no_prefix(data: &[u8]) -> Box<str> {
     hex_simd::encode_to_boxed_str(data, hex_simd::AsciiCase::Lower)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hex_encode() {
+        let input = b"hello world";
+        let hex_str = encode_hex(input);
+        let repr = hex_str.to_string();
+        assert_eq!(repr, "0x68656c6c6f20776f726c64");
+    }
+}
