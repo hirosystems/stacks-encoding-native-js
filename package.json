@@ -32,7 +32,10 @@
   },
   "files": [
     "native/**/*",
-    "index.*"
+    "index.js",
+    "index.d.ts",
+    "loader.js",
+    "loader.d.ts"
   ],
   "jest": {
     "preset": "ts-jest",
