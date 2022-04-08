@@ -53,5 +53,4 @@ features = ["napi-6"]
 flate2 = "1.0.22"
 
 [features]
-default = ["profiling"]
 profiling = ["pprof"]
