@@ -2,7 +2,6 @@ use crate::address::c32::c32_address;
 use crate::clarity_value;
 use crate::hex::encode_hex;
 use neon::prelude::*;
-use neon::types::buffer::TypedArray;
 
 pub fn decode_clarity_val<T: AsRef<[u8]>>(
     cx: &mut FunctionContext,
@@ -36,8 +35,7 @@ pub fn decode_clarity_val<T: AsRef<[u8]>>(
                 cur_obj.set(cx, "value", val_boolean)?;
             }
             Buffer(buff) => {
-                let mut obj_buffer = unsafe { JsBuffer::uninitialized(cx, buff.len()) }?;
-                obj_buffer.as_mut_slice(cx).copy_from_slice(buff);
+                let obj_buffer = cx.string(encode_hex(buff));
                 cur_obj.set(cx, "buffer", obj_buffer)?;
             }
             List(data) => {
@@ -69,10 +67,7 @@ pub fn decode_clarity_val<T: AsRef<[u8]>>(
                 let address_version = cx.number(standard_principal.0);
                 cur_obj.set(cx, "address_version", address_version)?;
 
-                let mut address_hash_bytes = unsafe { JsBuffer::uninitialized(cx, 20) }?;
-                address_hash_bytes
-                    .as_mut_slice(cx)
-                    .copy_from_slice(&standard_principal.1);
+                let address_hash_bytes = cx.string(encode_hex(&standard_principal.1));
                 cur_obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
                 let address_string = c32_address(standard_principal.0, &standard_principal.1)
@@ -87,10 +82,7 @@ pub fn decode_clarity_val<T: AsRef<[u8]>>(
                 let address_version = cx.number(contract_identifier.issuer.0);
                 cur_obj.set(cx, "address_version", address_version)?;
 
-                let mut address_hash_bytes = unsafe { JsBuffer::uninitialized(cx, 20) }?;
-                address_hash_bytes
-                    .as_mut_slice(cx)
-                    .copy_from_slice(&contract_identifier.issuer.1);
+                let address_hash_bytes = cx.string(encode_hex(&contract_identifier.issuer.1));
                 cur_obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
                 let address_string =

@@ -28,7 +28,7 @@ export function bitcoinToStacksAddress(bitcoinAddress: string): string;
 
 export function isValidStacksAddress(address: string): boolean;
 
-export function decodeStacksAddress(address: string): [version: number, hash160: Buffer];
+export function decodeStacksAddress(address: string): [version: number, hash160: string];
 
 export function stacksAddressFromParts(version: number, hash160: string | Buffer): string;
 

@@ -1,8 +1,8 @@
-use neon::{prelude::*, types::buffer::TypedArray};
+use neon::prelude::*;
 
-use crate::address::c32::c32_address;
 use crate::address::stacks_address::StacksAddress;
 use crate::clarity_value::neon_encoder::decode_clarity_val;
+use crate::{address::c32::c32_address, hex::encode_hex};
 
 use super::deserialize::{
     AssetInfo, AssetInfoID, FungibleConditionCode, NonfungibleConditionCode,
@@ -125,10 +125,7 @@ impl StacksAddress {
         let address_version = cx.number(self.version);
         obj.set(cx, "address_version", address_version)?;
 
-        let mut address_hash_bytes = unsafe { JsBuffer::uninitialized(cx, 20) }?;
-        address_hash_bytes
-            .as_mut_slice(cx)
-            .copy_from_slice(&self.hash160_bytes);
+        let address_hash_bytes = cx.string(encode_hex(&self.hash160_bytes));
         obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
         let address_str = c32_address(self.version, &self.hash160_bytes)

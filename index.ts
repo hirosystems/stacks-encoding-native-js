@@ -19,7 +19,8 @@ export interface DecodedTxResult {
     anchor_mode: AnchorModeID;
     post_condition_mode: PostConditionModeID;
     post_conditions: TxPostCondition[];
-    post_conditions_buffer: Buffer;
+    /** Hex string */
+    post_conditions_buffer: string;
     payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase;
 }
 
@@ -105,14 +106,16 @@ export interface PostConditionPrincipalOrigin {
 export interface PostConditionPrincipalStandard {
     type_id: PostConditionPrincipalTypeID.Standard;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
 }
 
 export interface PostConditionPrincipalContract {
     type_id: PostConditionPrincipalTypeID.Contract;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
     contract_name: string;
 }
@@ -123,7 +126,6 @@ export interface TxPayloadTokenTransfer {
     amount: string;
     /** Hex encoded string of the 34-bytes */
     memo_hex: string;
-    memo_buffer: Buffer;
 }
 
 export enum PrincipalTypeID {
@@ -134,7 +136,8 @@ export enum PrincipalTypeID {
 export interface PrincipalStandardData {
     type_id: PrincipalTypeID.Standard;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
 }
 
@@ -142,7 +145,8 @@ export interface PrincipalContractData {
     type_id: PrincipalTypeID.Contract;
     contract_name: string;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
 }
 
@@ -155,12 +159,14 @@ export interface TxPayloadSmartContract {
 export interface TxPayloadContractCall {
     type_id: TxPayloadTypeID.ContractCall;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
     contract_name: string;
     function_name: string;
     function_args: ParsedClarityValue[];
-    function_args_buffer: Buffer;
+    /** Hex string */
+    function_args_buffer: string;
 }
 
 export interface TxPayloadPoisonMicroblock {
@@ -171,7 +177,8 @@ export interface TxPayloadPoisonMicroblock {
 
 export interface TxPayloadCoinbase {
     type_id: TxPayloadTypeID.Coinbase;
-    payload_buffer: Buffer;
+    /** Hex string */
+    payload_buffer: string;
 }
 
 export enum TxPayloadTypeID {
@@ -259,12 +266,16 @@ export interface TxAuthFieldSignature {
 }
 
 export interface TxMicroblockHeader {
-    buffer: Buffer;
+    /** Hex string */
+    buffer: string;
     version: number;
     sequence: number;
-    prev_block: Buffer;
-    tx_merkle_root: Buffer;
-    signature: Buffer;
+    /** Hex string */
+    prev_block: string;
+    /** Hex string */
+    tx_merkle_root: string;
+    /** Hex string */
+    signature: string;
 }
 
 export enum TxPublicKeyEncoding {
@@ -274,7 +285,8 @@ export enum TxPublicKeyEncoding {
 
 export interface DecodedStacksAddress {
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     address: string;
 }
 
@@ -341,7 +353,8 @@ export interface ClarityValueBoolFalse {
 
 export interface ClarityValueBuffer {
     type_id: ClarityTypeID.Buffer;
-    buffer: Buffer;
+    /** Hex string */
+    buffer: string;
 }
 
 export interface ClarityValueList<T extends ClarityValue = ClarityValue> {
@@ -363,14 +376,16 @@ export interface ClarityValuePrincipalStandard {
     type_id: ClarityTypeID.PrincipalStandard;
     address: string;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
 }
 
 export interface ClarityValuePrincipalContract {
     type_id: ClarityTypeID.PrincipalContract;
     address: string;
     address_version: number;
-    address_hash_bytes: Buffer;
+    /** Hex string */
+    address_hash_bytes: string;
     contract_name: string;
 }
 

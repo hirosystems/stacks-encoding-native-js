@@ -1,6 +1,6 @@
 use neon::prelude::*;
-use neon::types::buffer::TypedArray;
 
+use crate::hex::encode_hex;
 use crate::neon_util::arg_as_bytes;
 
 use self::bitcoin_address::{
@@ -83,8 +83,7 @@ pub fn decode_stacks_address(mut cx: FunctionContext) -> JsResult<JsArray> {
         .or_else(|e| cx.throw_error(format!("Error parsing Stacks address {}", e)))?;
     let version = cx.number(address.0);
 
-    let mut hash160 = unsafe { JsBuffer::uninitialized(&mut cx, address.1.len()) }?;
-    hash160.as_mut_slice(&mut cx).copy_from_slice(&address.1);
+    let hash160 = cx.string(encode_hex(&address.1));
 
     let array_resp = JsArray::new(&mut cx, 2);
     array_resp.set(&mut cx, 0, version)?;

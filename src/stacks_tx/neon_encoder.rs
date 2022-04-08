@@ -1,7 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
 use neon::prelude::*;
-use neon::types::buffer::TypedArray;
 
 use crate::address::c32::c32_address;
 use crate::address::stacks_address::{AddressHashMode, StacksAddress};
@@ -64,8 +63,7 @@ impl NeonJsSerialize for StacksTransaction {
         }
         obj.set(cx, "post_conditions", post_conditions)?;
 
-        let post_conditions_raw = &self.post_conditions_serialized;
-        let post_conditions_buff = JsBuffer::external(cx, post_conditions_raw.clone());
+        let post_conditions_buff = cx.string(encode_hex(&self.post_conditions_serialized));
         obj.set(cx, "post_conditions_buffer", post_conditions_buff)?;
 
         let payload_obj = cx.empty_object();
@@ -228,10 +226,7 @@ impl NeonJsSerialize for StacksAddress {
         let address_version = cx.number(self.version);
         obj.set(cx, "address_version", address_version)?;
 
-        let mut address_hash_bytes = unsafe { JsBuffer::uninitialized(cx, 20) }?;
-        address_hash_bytes
-            .as_mut_slice(cx)
-            .copy_from_slice(&self.hash160_bytes);
+        let address_hash_bytes = cx.string(encode_hex(&self.hash160_bytes));
         obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
         let address_str = c32_address(self.version, &self.hash160_bytes)
@@ -475,9 +470,6 @@ impl NeonJsSerialize for TransactionPayload {
 
                 let memo_hex = cx.string(encode_hex(&memo.0));
                 obj.set(cx, "memo_hex", memo_hex)?;
-
-                let memo_hex = JsBuffer::external(cx, memo.0);
-                obj.set(cx, "memo_buffer", memo_hex)?;
             }
             TransactionPayload::ContractCall(ref contract_call) => {
                 let type_id = cx.number(TransactionPayloadID::ContractCall as u8);
@@ -507,7 +499,7 @@ impl NeonJsSerialize for TransactionPayload {
                 let type_id = cx.number(TransactionPayloadID::Coinbase as u8);
                 obj.set(cx, "type_id", type_id)?;
 
-                let payload_buffer = JsBuffer::external(cx, buf.0);
+                let payload_buffer = cx.string(encode_hex(&buf.0));
                 obj.set(cx, "payload_buffer", payload_buffer)?;
             }
         }
@@ -556,8 +548,7 @@ impl NeonJsSerialize for StandardPrincipalData {
         let address_version = cx.number(self.0);
         obj.set(cx, "address_version", address_version)?;
 
-        let mut address_hash_bytes = unsafe { JsBuffer::uninitialized(cx, 20) }?;
-        address_hash_bytes.as_mut_slice(cx).copy_from_slice(&self.1);
+        let address_hash_bytes = cx.string(encode_hex(&self.1));
         obj.set(cx, "address_hash_bytes", address_hash_bytes)?;
 
         let address_string = c32_address(self.0, &self.1)
@@ -601,7 +592,7 @@ impl NeonJsSerialize for TransactionContractCall {
         }
         obj.set(cx, "function_args", function_args)?;
 
-        let function_args_buff = JsBuffer::external(cx, function_args_raw);
+        let function_args_buff = cx.string(encode_hex(&function_args_raw));
         obj.set(cx, "function_args_buffer", function_args_buff)?;
 
         Ok(())
@@ -631,7 +622,7 @@ impl NeonJsSerialize for StacksMicroblockHeader {
         obj: &Handle<JsObject>,
         _extra_ctx: &(),
     ) -> NeonResult<()> {
-        let buffer = JsBuffer::external(cx, self.serialized_bytes.clone());
+        let buffer = cx.string(encode_hex(&self.serialized_bytes));
         obj.set(cx, "buffer", buffer)?;
 
         let version = cx.number(self.version);
@@ -640,13 +631,13 @@ impl NeonJsSerialize for StacksMicroblockHeader {
         let sequence = cx.number(self.sequence);
         obj.set(cx, "sequence", sequence)?;
 
-        let prev_block = JsBuffer::external(cx, self.prev_block.0);
+        let prev_block = cx.string(encode_hex(&self.prev_block.0));
         obj.set(cx, "prev_block", prev_block)?;
 
-        let tx_merkle_root = JsBuffer::external(cx, self.tx_merkle_root.0);
+        let tx_merkle_root = cx.string(encode_hex(&self.tx_merkle_root.0));
         obj.set(cx, "tx_merkle_root", tx_merkle_root)?;
 
-        let signature = JsBuffer::external(cx, self.signature.0);
+        let signature = cx.string(encode_hex(&self.signature.0));
         obj.set(cx, "signature", signature)?;
 
         Ok(())
