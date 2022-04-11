@@ -15,7 +15,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build
       - name: Test cargo
         run: npm run test:cargo
       - name: Test js
@@ -32,7 +32,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build
       - name: Test cargo
         run: npm run test:cargo
       - name: Test js
@@ -49,7 +49,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build
       - name: Test cargo
         run: npm run test:cargo
       - name: Test js
@@ -66,7 +66,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build
       - name: Test cargo
         run: npm run test:cargo
       - name: Test js
