@@ -138,9 +138,6 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(encode_hex(&self.signer));
-        obj.set(cx, "signer", signer)?;
-
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
         let stacks_address_version = match extra_ctx.transaction_version {
             TransactionVersion::Mainnet => stacks_address_hash_mode.to_version_mainnet(),
@@ -149,7 +146,7 @@ impl NeonJsSerialize<TxSerializationContext> for SinglesigSpendingCondition {
         let stacks_address = StacksAddress::new(stacks_address_version, self.signer);
         let stacks_address_obj = cx.empty_object();
         stacks_address.neon_js_serialize(cx, &stacks_address_obj, &())?;
-        obj.set(cx, "signer_stacks_address", stacks_address_obj)?;
+        obj.set(cx, "signer", stacks_address_obj)?;
 
         // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());
@@ -180,9 +177,6 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
         let hash_mode = cx.number(hash_mode_int);
         obj.set(cx, "hash_mode", hash_mode)?;
 
-        let signer = cx.string(encode_hex(&self.signer));
-        obj.set(cx, "signer", signer)?;
-
         let stacks_address_hash_mode = AddressHashMode::try_from(hash_mode_int).unwrap();
         let stacks_address_version = match extra_ctx.transaction_version {
             TransactionVersion::Mainnet => stacks_address_hash_mode.to_version_mainnet(),
@@ -191,7 +185,7 @@ impl NeonJsSerialize<TxSerializationContext> for MultisigSpendingCondition {
         let stacks_address = StacksAddress::new(stacks_address_version, self.signer);
         let stacks_address_obj = cx.empty_object();
         stacks_address.neon_js_serialize(cx, &stacks_address_obj, &())?;
-        obj.set(cx, "signer_stacks_address", stacks_address_obj)?;
+        obj.set(cx, "signer", stacks_address_obj)?;
 
         // TODO: bigint
         let nonce = cx.string(self.nonce.to_string());

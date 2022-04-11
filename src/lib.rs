@@ -2,8 +2,8 @@ use git_version::git_version;
 use neon::prelude::*;
 
 use crate::address::{
-    bitcoin_to_stacks_address, decode_stacks_address, is_valid_stacks_address,
-    stacks_address_from_parts, stacks_to_bitcoin_address,
+    bitcoin_to_stacks_address, decode_clarity_value_to_principal, decode_stacks_address,
+    is_valid_stacks_address, stacks_address_from_parts, stacks_to_bitcoin_address,
 };
 use crate::clarity_value::{
     decode_clarity_value, decode_clarity_value_array, decode_clarity_value_to_repr,
@@ -147,6 +147,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("bitcoinToStacksAddress", bitcoin_to_stacks_address)?;
     cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;
     cx.export_function("decodeStacksAddress", decode_stacks_address)?;
+    cx.export_function(
+        "decodeClarityValueToPrincipal",
+        decode_clarity_value_to_principal,
+    )?;
     cx.export_function("stacksAddressFromParts", stacks_address_from_parts)?;
     cx.export_function("memoToString", memo_to_string)?;
 

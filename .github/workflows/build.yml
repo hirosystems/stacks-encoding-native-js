@@ -36,7 +36,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-x64-musl
@@ -101,7 +101,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-arm64-musl
@@ -119,7 +119,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-x64-glibc
@@ -150,7 +150,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: linux-arm64-glibc
@@ -168,7 +168,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: win32-x64
@@ -186,7 +186,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: darwin-x64
@@ -211,7 +211,7 @@ jobs:
       - name: npm i
         run: npm i
       - name: Build
-        run: npm run build-cargo
+        run: npm run build:cargo
       - uses: actions/upload-artifact@v2
         with:
           name: darwin-arm64
@@ -252,7 +252,7 @@ jobs:
       - name: npm build
         run: |
           npm i
-          npm run build-ts
+          npm run build:ts
       - name: npm pack
         run: |
           npm pack

@@ -1,7 +1,12 @@
+use std::io::{Cursor, Read};
+
+use byteorder::ReadBytesExt;
 use neon::prelude::*;
 
+use crate::clarity_value::deserialize::TypePrefix;
+use crate::clarity_value::types::{ContractName, StandardPrincipalData};
 use crate::hex::encode_hex;
-use crate::neon_util::arg_as_bytes;
+use crate::neon_util::{arg_as_bytes, arg_as_bytes_copied};
 
 use self::bitcoin_address::{
     BitcoinAddress, ADDRESS_VERSION_MAINNET_MULTISIG, ADDRESS_VERSION_MAINNET_SINGLESIG,
@@ -89,6 +94,76 @@ pub fn decode_stacks_address(mut cx: FunctionContext) -> JsResult<JsArray> {
     array_resp.set(&mut cx, 0, version)?;
     array_resp.set(&mut cx, 1, hash160)?;
     Ok(array_resp)
+}
+
+fn decode_clarity_value_to_principal_inner(arg_bytes: &[u8]) -> Result<String, String> {
+    let mut cursor: Cursor<&[u8]> = Cursor::new(arg_bytes);
+    let prefix_byte = cursor
+        .read_u8()
+        .or_else(|e| Err(format!("Failed to read Clarity type prefix byte: {}", e)))?;
+
+    let prefix = match TypePrefix::from_u8(prefix_byte) {
+        Some(t) => t,
+        None => Err(format!(
+            "Bad type prefix to decode Clarity value to principal string"
+        ))?,
+    };
+
+    let addr = match prefix {
+        TypePrefix::Buffer => {
+            let version = cursor
+                .read_u8()
+                .or_else(|e| Err(format!("Failed to read address version: {}", e)))?;
+            let mut data = [0; 20];
+            cursor
+                .read_exact(&mut data)
+                .or_else(|e| Err(format!("Failed to read address bytes: {}", e)))?;
+            c32_address(version, &data)
+                .or_else(|e| Err(format!("Failed to encode principal to c32 address: {}", e)))?
+        }
+        TypePrefix::PrincipalStandard => {
+            let principal = StandardPrincipalData::deserialize(&mut cursor).or_else(|e| {
+                Err(format!(
+                    "Failed to deserialize standard principal to string: {}",
+                    e
+                ))
+            })?;
+            c32_address(principal.0, &principal.1)
+                .or_else(|e| Err(format!("Failed to encode principal to c32 address: {}", e)))?
+        }
+        TypePrefix::PrincipalContract => {
+            let issuer = StandardPrincipalData::deserialize(&mut cursor).or_else(|e| {
+                Err(format!(
+                    "Failed to deserialize standard principal to string: {}",
+                    e
+                ))
+            })?;
+            let name = ContractName::deserialize(&mut cursor).or_else(|e| {
+                Err(format!(
+                    "Failed to deserialize principal contract name to string: {}",
+                    e
+                ))
+            })?;
+            let c32_addr = c32_address(issuer.0, &issuer.1)
+                .or_else(|e| Err(format!("Failed to encode principal to c32 address: {}", e)))?;
+            format!("{}.{}", name, c32_addr)
+        }
+        _ => Err(format!("Type prefix {} to is not a principal", prefix_byte))?,
+    };
+    Ok(addr)
+}
+
+pub fn decode_clarity_value_to_principal(mut cx: FunctionContext) -> JsResult<JsString> {
+    let arg_bytes = arg_as_bytes_copied(&mut cx, 0)?;
+
+    let addr = decode_clarity_value_to_principal_inner(&arg_bytes).or_else(|e| {
+        cx.throw_error(format!(
+            "Error decoding clarity value to principal string: {}",
+            e
+        ))
+    })?;
+
+    Ok(cx.string(addr))
 }
 
 pub fn stacks_address_from_parts(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -196,6 +271,8 @@ pub fn perf_test_c32_decode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 
 #[cfg(test)]
 mod tests {
+    use crate::hex::decode_hex;
+
     use super::*;
 
     #[test]
@@ -212,6 +289,13 @@ mod tests {
         let output = stacks_to_bitcoin_address_internal(input.to_string()).unwrap();
         let expected = "mvtMXL9MYH8HaNz7u9AgapGqoFYpNDfKBx";
         assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_clarity_value_to_principal() {
+        let input = decode_hex("0x0516a13dce8114be0f707f94470a2e5e86eb402f2923").unwrap();
+        let output = decode_clarity_value_to_principal_inner(&input).unwrap();
+        assert_eq!(output, "SP2GKVKM12JZ0YW3ZJH3GMBJYGVNM0BS94ERA45AM");
     }
 
     /*

@@ -102,12 +102,11 @@ impl ClarityName {
 }
 
 impl StandardPrincipalData {
-    fn deserialize(r: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
-        let mut version = [0; 1];
+    pub fn deserialize(r: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+        let version = r.read_u8()?;
         let mut data = [0; 20];
-        r.read_exact(&mut version)?;
         r.read_exact(&mut data)?;
-        Ok(StandardPrincipalData(version[0], data))
+        Ok(StandardPrincipalData(version, data))
     }
 }
 

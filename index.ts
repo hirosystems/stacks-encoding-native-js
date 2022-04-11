@@ -51,7 +51,7 @@ export interface PostConditionNonfungible {
     asset_info_id: PostConditionAssetInfoID.NonfungibleAsset;
     principal: PostConditionPrincipal;
     asset: PostConditionAssetInfo;
-    asset_value: ParsedClarityValue;
+    asset_value: ClarityValueAbstract;
     condition_code: PostConditionNonfungibleConditionCodeID;
     condition_name: PostConditionNonFungibleConditionName;
 }
@@ -164,7 +164,7 @@ export interface TxPayloadContractCall {
     address: string;
     contract_name: string;
     function_name: string;
-    function_args: ParsedClarityValue[];
+    function_args: ClarityValueAbstract[];
     /** Hex string */
     function_args_buffer: string;
 }
@@ -221,9 +221,7 @@ export enum TxSpendingConditionMultiSigHashMode {
 
 export interface DecodedTxSpendingConditionSingleSig {
     hash_mode: TxSpendingConditionSingleSigHashMode;
-    /** Hex-encoded string of the hash160 signer address. */
-    signer: string;
-    signer_stacks_address: DecodedStacksAddress;
+    signer: DecodedStacksAddress;
     nonce: string;
     tx_fee: string;
     /** A 1-byte public key encoding field to indicate whether or not the public key should be compressed before hashing. */
@@ -233,9 +231,7 @@ export interface DecodedTxSpendingConditionSingleSig {
 
 export interface DecodedTxSpendingConditionMultiSig {
     hash_mode: TxSpendingConditionMultiSigHashMode;
-    /** Hex-encoded string of the hash160 signer address. */
-    signer: string;
-    signer_stacks_address: DecodedStacksAddress;
+    signer: DecodedStacksAddress;
     nonce: string;
     tx_fee: string;
     fields: (TxAuthFieldPublicKey | TxAuthFieldSignature)[];
@@ -285,7 +281,7 @@ export enum TxPublicKeyEncoding {
 
 export interface DecodedStacksAddress {
     address_version: number;
-    /** Hex string */
+    /** Hex-encoded string of the hash160 signer address. */
     address_hash_bytes: string;
     address: string;
 }
@@ -311,6 +307,17 @@ export enum PostConditionModeID {
     Deny = 0x02,
 }
 
+export interface ClarityValueCommon {
+  /** Clarity repr value */
+  repr: string;
+  /** Hex encoded string of the serialized Clarity value */
+  hex: string;
+}
+
+export interface ClarityValueAbstract extends ClarityValueCommon {
+  type_id: number;
+}
+
 export enum ClarityTypeID {
     Int = 0,
     UInt = 1,
@@ -329,50 +336,50 @@ export enum ClarityTypeID {
     StringUtf8 = 14,
 }
 
-export interface ClarityValueInt {
+export interface ClarityValueInt extends ClarityValueCommon {
     type_id: ClarityTypeID.Int;
     /** String-quoted signed integer */
     value: string;
 }
 
-export interface ClarityValueUInt {
+export interface ClarityValueUInt extends ClarityValueCommon {
     type_id: ClarityTypeID.UInt;
     /** String-quoted unsigned integer */
     value: string;
 }
 
-export interface ClarityValueBoolTrue {
+export interface ClarityValueBoolTrue extends ClarityValueCommon {
     type_id: ClarityTypeID.BoolTrue;
     value: true;
 }
 
-export interface ClarityValueBoolFalse {
+export interface ClarityValueBoolFalse extends ClarityValueCommon {
     type_id: ClarityTypeID.BoolFalse;
     value: false;
 }
 
-export interface ClarityValueBuffer {
+export interface ClarityValueBuffer extends ClarityValueCommon {
     type_id: ClarityTypeID.Buffer;
     /** Hex string */
     buffer: string;
 }
 
-export interface ClarityValueList<T extends ClarityValue = ClarityValue> {
+export interface ClarityValueList<T extends ClarityValue = ClarityValue> extends ClarityValueCommon {
     type_id: ClarityTypeID.List;
     list: T[];
 }
 
-export interface ClarityValueStringAscii {
+export interface ClarityValueStringAscii extends ClarityValueCommon {
     type_id: ClarityTypeID.StringAscii;
     data: string;
 }
 
-export interface ClarityValueStringUtf8 {
+export interface ClarityValueStringUtf8 extends ClarityValueCommon {
     type_id: ClarityTypeID.StringUtf8;
     data: string;
 }
 
-export interface ClarityValuePrincipalStandard {
+export interface ClarityValuePrincipalStandard extends ClarityValueCommon {
     type_id: ClarityTypeID.PrincipalStandard;
     address: string;
     address_version: number;
@@ -380,7 +387,7 @@ export interface ClarityValuePrincipalStandard {
     address_hash_bytes: string;
 }
 
-export interface ClarityValuePrincipalContract {
+export interface ClarityValuePrincipalContract extends ClarityValueCommon {
     type_id: ClarityTypeID.PrincipalContract;
     address: string;
     address_version: number;
@@ -391,26 +398,26 @@ export interface ClarityValuePrincipalContract {
 
 export type ClarityTupleData<T extends ClarityValue = ClarityValue> = { [key: string]: T };
 
-export interface ClarityValueTuple<T extends ClarityTupleData = ClarityTupleData> {
+export interface ClarityValueTuple<T extends ClarityTupleData = ClarityTupleData> extends ClarityValueCommon {
     type_id: ClarityTypeID.Tuple;
     data: T;
 }
 
-export interface ClarityValueOptionalSome<T extends ClarityValue = ClarityValue> {
+export interface ClarityValueOptionalSome<T extends ClarityValue = ClarityValue> extends ClarityValueCommon {
     type_id: ClarityTypeID.OptionalSome;
     value: T;
 }
 
-export interface ClarityValueOptionalNone {
+export interface ClarityValueOptionalNone extends ClarityValueCommon {
     type_id: ClarityTypeID.OptionalNone;
 }
 
-export interface ClarityValueResponseOk<T extends ClarityValue = ClarityValue> {
+export interface ClarityValueResponseOk<T extends ClarityValue = ClarityValue> extends ClarityValueCommon {
     type_id: ClarityTypeID.ResponseOk;
     value: T;
 }
 
-export interface ClarityValueResponseError<T extends ClarityValue = ClarityValue> {
+export interface ClarityValueResponseError<T extends ClarityValue = ClarityValue> extends ClarityValueCommon {
     type_id: ClarityTypeID.ResponseError;
     value: T;
 }
@@ -432,60 +439,16 @@ export type ClarityValue =
     | ClarityValueResponseOk
     | ClarityValueResponseError;
 
-export interface ParsedClarityValueInfo {
-    // type_id: ClarityTypeID;
-    /** Type signature */
-    // type: string;
-    /** Clarity repr value */
-    repr: string;
-    /** Hex encoded string of the serialized Clarity value */
-    hex: string;
-}
-
-export interface ParsedClarityValueInt extends ClarityValueInt, ParsedClarityValueInfo {}
-export interface ParsedClarityValueUInt extends ClarityValueUInt, ParsedClarityValueInfo {}
-export interface ParsedClarityValueBoolTrue extends ClarityValueBoolTrue, ParsedClarityValueInfo {}
-export interface ParsedClarityValueBoolFalse extends ClarityValueBoolFalse, ParsedClarityValueInfo {}
-export interface ParsedClarityValueBuffer extends ClarityValueBuffer, ParsedClarityValueInfo {}
-export interface ParsedClarityValueList<T extends ParsedClarityValue = ParsedClarityValue> extends ClarityValueList<T>, ParsedClarityValueInfo {}
-export interface ParsedClarityValueStringAscii extends ClarityValueStringAscii, ParsedClarityValueInfo {}
-export interface ParsedClarityValueStringUtf8 extends ClarityValueStringUtf8, ParsedClarityValueInfo {}
-export interface ParsedClarityValuePrincipalStandard extends ClarityValuePrincipalStandard, ParsedClarityValueInfo {}
-export interface ParsedClarityValuePrincipalContract extends ClarityValuePrincipalContract, ParsedClarityValueInfo {}
-export type ParsedClarityTupleData<T extends ParsedClarityValue = ParsedClarityValue> = { [key: string]: T };
-export interface ParsedClarityValueTuple<T extends ParsedClarityTupleData = ParsedClarityTupleData> extends ClarityValueTuple<T>, ParsedClarityValueInfo {}
-export interface ParsedClarityValueOptionalSome<T extends ParsedClarityValue = ParsedClarityValue> extends ClarityValueOptionalSome<T>, ParsedClarityValueInfo {}
-export interface ParsedClarityValueOptionalNone extends ClarityValueOptionalNone, ParsedClarityValueInfo {}
-export interface ParsedClarityValueResponseOk<T extends ParsedClarityValue = ParsedClarityValue> extends ClarityValueResponseOk<T>, ParsedClarityValueInfo {}
-export interface ParsedClarityValueResponseError<T extends ParsedClarityValue = ParsedClarityValue> extends ClarityValueResponseError<T>, ParsedClarityValueInfo {}
-
-export type ParsedClarityValue = 
-    | ParsedClarityValueInt
-    | ParsedClarityValueUInt
-    | ParsedClarityValueBoolTrue
-    | ParsedClarityValueBoolFalse
-    | ParsedClarityValueBuffer
-    | ParsedClarityValueList
-    | ParsedClarityValueStringAscii
-    | ParsedClarityValueStringUtf8
-    | ParsedClarityValuePrincipalStandard
-    | ParsedClarityValuePrincipalContract
-    | ParsedClarityValueTuple
-    | ParsedClarityValueOptionalSome
-    | ParsedClarityValueOptionalNone
-    | ParsedClarityValueResponseOk
-    | ParsedClarityValueResponseError;
-
-export type ParsedClarityValueOptional<T extends ParsedClarityValue = ParsedClarityValue> = ParsedClarityValueOptionalSome<T> | ParsedClarityValueOptionalNone;
-export type ParsedClarityValueBool = ParsedClarityValueBoolTrue | ParsedClarityValueBoolFalse;
-export type ParsedClarityValueResponse<TOk extends ParsedClarityValue = ParsedClarityValue, TError extends ParsedClarityValue = ParsedClarityValue> = ParsedClarityValueResponseOk<TOk> | ParsedClarityValueResponseError<TError>;
+export type ClarityValueOptional<T extends ClarityValue = ClarityValue> = ClarityValueOptionalSome<T> | ClarityValueOptionalNone;
+export type ClarityValueBool = ClarityValueBoolTrue | ClarityValueBoolFalse;
+export type ClarityValueResponse<TOk extends ClarityValue = ClarityValue, TError extends ClarityValue = ClarityValue> = ClarityValueResponseOk<TOk> | ClarityValueResponseError<TError>;
 
 /**
  * Type for commonly used `(optional bool)`
  */
-export type ParsedClarityValueOptionalBool = ParsedClarityValueOptional<ParsedClarityValueBool>;
+export type ClarityValueOptionalBool = ClarityValueOptional<ClarityValueBool>;
 
 /**
  * Type for commonly used `(optional uint)`
  */
-export type ParsedClarityValueOptionalUInt = ParsedClarityValueOptional<ParsedClarityValueUInt>;
+export type ClarityValueOptionalUInt = ClarityValueOptional<ClarityValueUInt>;

@@ -11,8 +11,7 @@ test('decode tx - contract-call 1', () => {
           "key_encoding": 0,
           "nonce": "442",
           "signature": "0x0004fbc868d0ca4a9145f43a396c796bcbb2888a5519afe08ab80afc3e1d4f86607e66f795e59efa824c12782870f8fa29aaf03eb0380fde6e70b8bbf2e2a5f8c8",
-          "signer": "0xb1907a5f15e25dfbb7487a032d37f61205d61276",
-          "signer_stacks_address": {
+          "signer": {
             "address": "SP2RS0YJZ2QH5VYXQ91X06B9QYR90BNGJETWP0V69",
             "address_hash_bytes": "0xb1907a5f15e25dfbb7487a032d37f61205d61276",
             "address_version": 22
@@ -114,8 +113,7 @@ test('decode tx - contract-call 2', () => {
           "key_encoding": 0,
           "nonce": "325",
           "signature": "0x008b510c9e20dc22040953d9d7eabf2038008fa4d89a5a6cb78bb9d513e75cd0df3924af9ce3b5f185705bc2f6ba3071710ec6a8803ed6da4addc40a05a01ee0f5",
-          "signer": "0x89f5fd1f719e4449c980de38e3504be6770a2698",
-          "signer_stacks_address": {
+          "signer": {
             "address": "SP24ZBZ8ZE6F48JE9G3F3HRTG9FK7E2H6K2QZ3Q1K",
             "address_hash_bytes": "0x89f5fd1f719e4449c980de38e3504be6770a2698",
             "address_version": 22
@@ -198,8 +196,7 @@ test('decode tx - token-transfer', () => {
           "key_encoding": 0,
           "nonce": "47",
           "signature": "0x00ffdf728bc8d1423ba751e164a153b160c48980e727c98971816096534ee6b3a40e81b31786a547cc64fcb52d592939ec5a5886d8ec8053a91e22e76cb9ef4d44",
-          "signer": "0xd27548439b50c8d8ca86756151bd6e07059510a0",
-          "signer_stacks_address": {
+          "signer": {
             "address": "SP397AJ23KD8CHP6AGSTP2MDXDR3GB58GM1NCJD22",
             "address_hash_bytes": "0xd27548439b50c8d8ca86756151bd6e07059510a0",
             "address_version": 22
@@ -240,8 +237,7 @@ test('decode tx - smart-contract', () => {
         "type_id": 4,
         "origin_condition": {
           "hash_mode": 0,
-          "signer": "0x8e78fd48543bb20a9f9b78558ab5a98388dc82a6",
-          "signer_stacks_address": {
+          "signer": {
             "address_version": 22,
             "address_hash_bytes": "0x8e78fd48543bb20a9f9b78558ab5a98388dc82a6",
             "address": "SP277HZA8AGXV42MZKDW5B2NNN61RHQ42MTAHVNB1"
@@ -276,8 +272,7 @@ test('decode tx - coinbase', () => {
           "key_encoding": 0,
           "nonce": "7644",
           "signature": "0x01827095db6a9de80e51323bc96a926874999472634fbdfd5adc36df48e2d6b01c7505244fba66e8812b761a2ea1f1e98253139db1ccd1c7ffaa14208dd489bf69",
-          "signer": "0xb00de0cc7b5e518f7d1e43d6e5ecbd52e0cd0c2f",
-          "signer_stacks_address": {
+          "signer": {
             "address": "SP2R0VR6CFDF533VX3S1XDSFCQN9E1K8C5WS5Q9JC",
             "address_hash_bytes": "0xb00de0cc7b5e518f7d1e43d6e5ecbd52e0cd0c2f",
             "address_version": 22
@@ -311,8 +306,7 @@ test('decode tx - sponsored', () => {
         "type_id": 5,
         "origin_condition": {
           "hash_mode": 0,
-          "signer": "0x1f6000287c9ed40ba39b27fc4257ff30cda4e91d",
-          "signer_stacks_address": {
+          "signer": {
             "address_version": 22,
             "address_hash_bytes": "0x1f6000287c9ed40ba39b27fc4257ff30cda4e91d",
             "address": "SPFP0018FJFD82X3KCKZRGJQZWRCV9793QTGE87M"
@@ -324,8 +318,7 @@ test('decode tx - sponsored', () => {
         },
         "sponsor_condition": {
           "hash_mode": 0,
-          "signer": "0x661506d48705f932af21abcff23046b216886e84",
-          "signer_stacks_address": {
+          "signer": {
             "address_version": 22,
             "address_hash_bytes": "0x661506d48705f932af21abcff23046b216886e84",
             "address": "SP1K1A1PMGW2ZJCNF46NWZWHG8TS1D23EGH1KNK60"
