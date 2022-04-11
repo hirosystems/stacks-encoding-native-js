@@ -31,6 +31,18 @@
       "outFiles": [
         "${workspaceFolder}/**/*.js"
       ]
+    },
+    {
+      "name": "build",
+      "type": "pwa-node",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/build.js",
+      "outFiles": [
+        "${workspaceFolder}/**/*.js"
+      ]
     }
   ]
 }

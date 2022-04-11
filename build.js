@@ -37,7 +37,7 @@ if (!outputFileName || !cargoTarget) {
   throw new Error(`Unsupported target ${configuredTarget}`);
 }
 
-const outputFilePath = path.resolve(__dirname, '../', 'native', outputFileName);
+const outputFilePath = path.join('native', outputFileName);
 if (fs.existsSync(outputFilePath)) {
   fs.unlinkSync(outputFilePath);
 }

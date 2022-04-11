@@ -1,4 +1,4 @@
-import { decodeClarityValueList } from '../';
+import { decodeClarityValueList } from '../index.js';
 
 test('decode value array 1', () => {
   const decoded = decodeClarityValueList('0x0000');

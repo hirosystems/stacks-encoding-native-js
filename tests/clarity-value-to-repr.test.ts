@@ -1,4 +1,4 @@
-import { decodeClarityValueToRepr } from '../';
+import { decodeClarityValueToRepr } from '../index.js';
 
 test('decode clarity value to repr string - optional', () => {
   const repr = decodeClarityValueToRepr('0x0a010000000000000000000000116c7a7446');
