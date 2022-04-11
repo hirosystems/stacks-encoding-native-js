@@ -3,4 +3,4 @@ if (process.platform === 'linux') {
     const libc = require('detect-libc').familySync() || 'glibc';
     targetName += `-${libc}`;
 }
-module.exports = require(`./native/${targetName}.node`);
+module.exports = require(require('path').resolve('native', `${targetName}.node`));

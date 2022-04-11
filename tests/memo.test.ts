@@ -1,4 +1,4 @@
-import { memoToString } from '../index.js';
+import { memoToString } from '../';
 
 test('memo 1', () => {
   const decoded = memoToString('0385180b0409122e622f706f6f6c696e2e636f6d2ffabe6d6da594842fb1be531df010e9489339c2ce500be4a758d42f3f2d48eab40bd771ba01000000000000008ecc586dc48eecad394f780bc5e680b11200c3f6080000000000');

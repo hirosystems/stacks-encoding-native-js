@@ -1,4 +1,4 @@
-import { decodePostConditions } from '../index.js';
+import { decodePostConditions } from '../';
 
 test('decode post conditions', () => {
   const postConditions = decodePostConditions('020000000200021642779fa5c48120aa60c18eb05a164bad77bf2cdd0100000000002ab9800103167e9152cdbbb9fef066df4e1b88b19bcb313acc901b6c69717569646974792d746f6b656e2d76356b6d6e77733563676c1608633eac058f2e6ab41613a0a537c7ea1a79cdd20f6d69616d69636f696e2d746f6b656e096d69616d69636f696e030000000000000423');

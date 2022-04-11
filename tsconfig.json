@@ -6,10 +6,10 @@
     "target": "es2021",
     "module": "commonjs",
     "strict": true,
-    "outDir": "./",
+    "outDir": "./scripts",
     "declaration": true
   },
   "files": [
-    "index.ts"
+    "scripts/index.ts"
   ],
 }

@@ -1,4 +1,4 @@
-import { decodeClarityValueToPrincipal, stacksAddressFromParts } from '../index.js';
+import { decodeClarityValueToPrincipal, stacksAddressFromParts } from '../';
 
 test('stacks address from bytes and hash160 hex', () => {
   let address = stacksAddressFromParts(26, '0xcd1f5bc9aa49e7417cee3e5dba1a92567da41af6');
