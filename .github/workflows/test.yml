@@ -54,3 +54,20 @@ jobs:
         run: npm run test:cargo
       - name: Test js
         run: npm run test:js
+
+  test_darwin-x64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: npm i
+        run: npm i
+      - name: Build
+        run: npm run build-cargo
+      - name: Test cargo
+        run: npm run test:cargo
+      - name: Test js
+        run: npm run test:js
