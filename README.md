@@ -3,7 +3,7 @@
 _This project was bootstrapped by [create-neon](https://www.npmjs.com/package/create-neon)._
 
 
-NodeJS library providing platform-native functions for decoding binary/wire formats from the Stacks blockchain. This includes Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, and more. All of which use ASM/SIMD where available.
+NodeJS [native addon](https://nodejs.org/api/addons.html) library written in Rust providing functions for decoding binary/wire formats from the Stacks blockchain. This includes Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, and more. All of which use ASM/SIMD where available.
 
 ### Supported platforms
 
