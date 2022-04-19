@@ -6,32 +6,160 @@ use std::convert::TryInto;
 const C32_CHARACTERS: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 /// C32 chars as an array, indexed by their ASCII code for O(1) lookups.
-/// Supports lookups by uppercase, lowercase, and special (i.e. `O, L, I`) chars.
+/// Supports lookups by uppercase and lowercase.
+///
+/// The table also encodes the special characters `O, L, I`:
+///   * `O` and `o` as `0`
+///   * `L` and `l` as `1`
+///   * `I` and `i` as `1`
+///
 /// Table can be generated with:
 /// ```
-/// let mut table: [isize; 128] = [-1; 128];
+/// let mut table: [Option<u8>; 128] = [None; 128];
 /// let alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 /// for (i, x) in alphabet.as_bytes().iter().enumerate() {
-///     table[*x as usize] = i as isize;
+///     table[*x as usize] = Some(i as u8);
 /// }
 /// let alphabet_lower = alphabet.to_lowercase();
 /// for (i, x) in alphabet_lower.as_bytes().iter().enumerate() {
-///     table[*x as usize] = i as isize;
+///     table[*x as usize] = Some(i as u8);
 /// }
 /// let specials = [('O', '0'), ('L', '1'), ('I', '1')];
 /// for pair in specials {
 ///     let i = alphabet.find(|a| a == pair.1).unwrap() as isize;
-///     table[pair.0 as usize] = i;
-///     table[pair.0.to_ascii_lowercase() as usize] = i;
+///     table[pair.0 as usize] = Some(i as u8);
+///     table[pair.0.to_ascii_lowercase() as usize] = Some(i as u8);
 /// }
 /// ```
-const C32_CHARACTERS_MAP: [i8; 128] = [
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, 16, 17, 1,
-    18, 19, 1, 20, 21, 0, 22, 23, 24, 25, 26, -1, 27, 28, 29, 30, 31, -1, -1, -1, -1, -1, -1, 10,
-    11, 12, 13, 14, 15, 16, 17, 1, 18, 19, 1, 20, 21, 0, 22, 23, 24, 25, 26, -1, 27, 28, 29, 30,
-    31, -1, -1, -1, -1, -1,
+const C32_CHARACTERS_MAP: [Option<u8>; 128] = [
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    Some(0),
+    Some(1),
+    Some(2),
+    Some(3),
+    Some(4),
+    Some(5),
+    Some(6),
+    Some(7),
+    Some(8),
+    Some(9),
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    Some(10),
+    Some(11),
+    Some(12),
+    Some(13),
+    Some(14),
+    Some(15),
+    Some(16),
+    Some(17),
+    Some(1),
+    Some(18),
+    Some(19),
+    Some(1),
+    Some(20),
+    Some(21),
+    Some(0),
+    Some(22),
+    Some(23),
+    Some(24),
+    Some(25),
+    Some(26),
+    None,
+    Some(27),
+    Some(28),
+    Some(29),
+    Some(30),
+    Some(31),
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    Some(10),
+    Some(11),
+    Some(12),
+    Some(13),
+    Some(14),
+    Some(15),
+    Some(16),
+    Some(17),
+    Some(1),
+    Some(18),
+    Some(19),
+    Some(1),
+    Some(20),
+    Some(21),
+    Some(0),
+    Some(22),
+    Some(23),
+    Some(24),
+    Some(25),
+    Some(26),
+    None,
+    Some(27),
+    Some(28),
+    Some(29),
+    Some(30),
+    Some(31),
+    None,
+    None,
+    None,
+    None,
+    None,
 ];
 
 #[allow(dead_code)]
@@ -147,12 +275,9 @@ fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, String> {
 
     for (i, x) in input_str.iter().rev().enumerate() {
         c32_digits[i] = match C32_CHARACTERS_MAP.get(*x as usize) {
-            Some(v) => match u8::try_from(*v) {
-                Ok(v) => Ok(v),
-                Err(_) => Err("Invalid crockford 32 string".to_string()),
-            },
-            None => Err("Invalid crockford 32 string".to_string()),
-        }?;
+            Some(&Some(v)) => v,
+            _ => Err("Invalid crockford 32 string".to_string())?,
+        };
     }
 
     for current_5bit in &c32_digits {
