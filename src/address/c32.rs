@@ -315,7 +315,7 @@ fn c32_decode_ascii(input_str: &[u8]) -> Result<Vec<u8>, String> {
     Ok(result)
 }
 
-fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<String, String> {
+fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<Vec<u8>, String> {
     if version >= 32 {
         return Err(format!("Invalid version {}", version));
     }
@@ -340,8 +340,7 @@ fn c32_check_encode_prefixed(version: u8, data: &[u8], prefix: u8) -> Result<Str
     result[1] = C32_CHARACTERS[version as usize];
     let bytes_written = c32_encode_to_buffer(&buffer, &mut result[2..])?;
     result.truncate(bytes_written + 2);
-    let str_result = unsafe { String::from_utf8_unchecked(result) };
-    Ok(str_result)
+    Ok(result)
 }
 
 fn c32_check_decode<TOutput>(check_data_unsanitized: &str) -> Result<(u8, TOutput), String>
@@ -412,7 +411,8 @@ pub fn c32_address_decode(c32_address_str: &str) -> Result<(u8, [u8; 20]), Strin
 }
 
 pub fn c32_address(version: u8, data: &[u8]) -> Result<String, String> {
-    c32_check_encode_prefixed(version, data, b'S')
+    let bytes = c32_check_encode_prefixed(version, data, b'S')?;
+    Ok(String::from_utf8(bytes).unwrap())
 }
 
 #[cfg(test)]
@@ -547,7 +547,6 @@ mod test {
                 let c32_encoded = c32_encode(&bytes);
                 let decoded_bytes = c32_decode(&c32_encoded).unwrap();
                 let result = (bytes, c32_encoded, decoded_bytes, expected);
-                println!("{:?}", result);
                 result
             })
             .collect();

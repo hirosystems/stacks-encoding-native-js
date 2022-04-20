@@ -13,14 +13,14 @@ use crate::memo::memo_to_string;
 use crate::post_condition::decode_tx_post_conditions;
 use crate::stacks_tx::decode_transaction;
 
-mod address;
-mod clarity_value;
-mod hex;
-mod memo;
-mod neon_util;
-mod post_condition;
-mod serialize_util;
-mod stacks_tx;
+pub mod address;
+pub mod clarity_value;
+pub mod hex;
+pub mod memo;
+pub mod neon_util;
+pub mod post_condition;
+pub mod serialize_util;
+pub mod stacks_tx;
 
 const GIT_VERSION: &str = git_version!(
     args = ["--all", "--long", "--always"],

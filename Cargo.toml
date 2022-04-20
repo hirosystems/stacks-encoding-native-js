@@ -15,7 +15,7 @@ inherits = "release"
 debug = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 hex-simd = { version = "0.5.0" }
@@ -51,6 +51,11 @@ features = ["napi-6"]
 
 [dev-dependencies]
 flate2 = "1.0.22"
+criterion = "0.3"
 
 [features]
 profiling = ["pprof"]
+
+[[bench]]
+name = "c32_bench"
+harness = false
