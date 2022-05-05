@@ -11,6 +11,8 @@
     "test:cargo": "cargo test",
     "test:js": "jest",
     "test": "npm run test:js",
+    "lint": "npm run lint:cargo",
+    "lint:cargo": "cargo fmt --all -- --check",
     "perf-test:contract-call-args": "node --expose-gc perf-tests/decode-contract-call-args/test.js",
     "perf-test:decode-post-conditions": "node --expose-gc perf-tests/decode-post-conditions/test.js",
     "perf-test:encode-stx-address": "node perf-tests/encode-stx-address/test.js",

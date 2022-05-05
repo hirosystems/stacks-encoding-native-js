@@ -173,7 +173,7 @@ fn c32_encode(input_bytes: &[u8]) -> String {
 
 /// Calculate the maximum C32 encoded output size given an input size.
 /// Each C32 character encodes 5 bits.
-fn get_max_c32_encode_output_len(input_len: usize) -> usize {
+pub fn get_max_c32_encode_output_len(input_len: usize) -> usize {
     let capacity = (input_len as f64 + (input_len % 5) as f64) / 5.0 * 8.0;
     capacity as usize
 }
@@ -188,15 +188,16 @@ fn get_max_c32_encode_output_len(input_len: usize) -> usize {
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```
+/// use stacks_encoding_native_js::address::c32::*;
 /// let input_bytes = b"hello world";
 /// let capacity = get_max_c32_encode_output_len(input_bytes.len());
 /// let mut buffer: Vec<u8> = vec![0; capacity];
 /// let bytes_written = c32_encode_to_buffer(input_bytes, &mut buffer).unwrap();
 /// buffer.truncate(bytes_written);
-/// String::from_utf8(buffer)
+/// String::from_utf8(buffer);
 /// ```
-fn c32_encode_to_buffer(input_bytes: &[u8], output_buffer: &mut [u8]) -> Result<usize, String> {
+pub fn c32_encode_to_buffer(input_bytes: &[u8], output_buffer: &mut [u8]) -> Result<usize, String> {
     let min_len = get_max_c32_encode_output_len(input_bytes.len());
     if output_buffer.len() < min_len {
         Err(format!(
