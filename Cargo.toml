@@ -28,11 +28,6 @@ rand = "0.8.5"
 byteorder = "1.4.3"
 
 [dependencies.pprof]
-# git = "https://github.com/YangKeao/pprof-rs"
-# branch = "nongu-unwind"
-# features = ["nongnu-libunwind", "flamegraph"]
-git = "https://github.com/mornyx/pprof-rs"
-branch = "unwind"
 features = ["flamegraph"]
 optional = true
 
