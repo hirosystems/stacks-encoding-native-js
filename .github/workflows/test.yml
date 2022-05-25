@@ -21,6 +21,44 @@ jobs:
       - name: Test js
         run: npm run test:js
 
+  test_linux-arm64-musl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Compute environment variables
+        run: |
+          echo "RUNNER_UID=`id -u`" >> $GITHUB_ENV
+          echo "RUNNER_GID=`id -g`" >> $GITHUB_ENV
+      - name: Run on architecture
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: aarch64
+          distro: alpine_latest
+          # githubToken: ${{ github.token }}
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}:/source"
+            --volume "${PWD}/artifacts:/artifacts"
+            --user root
+          shell: /bin/ash
+          install: |
+            apk update
+            apk add alpine-sdk git rustup git nodejs npm
+            rustup-init -y --profile minimal
+          run: |
+            echo "setting source dir"
+            cd /source
+            echo "fixing perms"
+            chown -R $(whoami) ~/.npm
+            echo "running npm i"
+            npm i
+            "echo running build.js"
+            node build.js
+          # npm run build
+          # npm run test:cargo
+          # npm run test:js
+
   test_linux-x64-glibc:
     runs-on: ubuntu-latest
     steps:
