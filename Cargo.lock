@@ -444,9 +444,9 @@ dependencies = [
 
 [[package]]
 name = "inferno"
-version = "0.10.12"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de3886428c6400486522cf44b8626e7b94ad794c14390290f2a274dcf728a58f"
+checksum = "16d4bde3a7105e59c66a4104cfe9606453af1c7a0eac78cb7d5bc263eb762a70"
 dependencies = [
  "ahash",
  "atty",
@@ -617,15 +617,13 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.23.1"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f866317acbd3a240710c63f065ffb1e4fd466259045ccb504130b7f668f35c6"
+checksum = "8f17df307904acd05aa8e32e97bb20f2a0df1728bbc2d771ae8f9a90463441e9"
 dependencies = [
  "bitflags",
- "cc",
  "cfg-if",
  "libc",
- "memoffset",
 ]
 
 [[package]]
@@ -737,23 +735,23 @@ dependencies = [
 
 [[package]]
 name = "pprof"
-version = "0.6.2"
-source = "git+https://github.com/mornyx/pprof-rs?branch=unwind#e5b0c1166a740a7626e33288e0649a68d5e422d5"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a97149c0eacaa6b8f8cedea99f68bb3a0517fa20f8de8d8c24c1a810f38d235d"
 dependencies = [
  "backtrace",
  "cfg-if",
  "findshlibs",
  "inferno",
- "lazy_static",
  "libc",
  "log",
  "nix",
+ "once_cell",
  "parking_lot",
  "smallvec",
  "symbolic-demangle",
  "tempfile",
  "thiserror",
- "unwind",
 ]
 
 [[package]]
@@ -1179,18 +1177,6 @@ name = "unicode-xid"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
-
-[[package]]
-name = "unwind"
-version = "0.0.1"
-source = "git+https://github.com/mornyx/unwind.git?rev=2e0a85d9e3b2a067899cee8cda345436332ff450#2e0a85d9e3b2a067899cee8cda345436332ff450"
-dependencies = [
- "cc",
- "lazy_static",
- "libc",
- "smallvec",
- "thiserror",
-]
 
 [[package]]
 name = "uuid"

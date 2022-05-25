@@ -239,7 +239,7 @@ pub struct StandardPrincipalData(pub u8, pub [u8; 20]);
 #[derive(Clone, Eq, PartialEq)]
 pub struct QualifiedContractIdentifier {
     pub issuer: StandardPrincipalData,
-    pub name: ContractName,
+    pub name: ClarityName,
 }
 
 #[macro_export]
