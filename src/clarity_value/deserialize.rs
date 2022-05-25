@@ -166,7 +166,7 @@ impl ClarityValue {
             }
             TypePrefix::PrincipalContract => {
                 let issuer = StandardPrincipalData::deserialize(r)?;
-                let name = ContractName::deserialize(r)?;
+                let name = ClarityName::deserialize(r)?;
                 Value::PrincipalContract(QualifiedContractIdentifier { issuer, name })
             }
             TypePrefix::ResponseOk => {

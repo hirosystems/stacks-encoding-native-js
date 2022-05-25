@@ -3,7 +3,7 @@ use std::io::{Cursor, Read};
 
 use crate::address::stacks_address::StacksAddress;
 use crate::clarity_value::deserialize::TypePrefix;
-use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName};
+use crate::clarity_value::types::{ClarityName, ClarityValue};
 use crate::post_condition::deserialize::TransactionPostCondition;
 use crate::serialize_util::DeserializeError;
 
@@ -374,7 +374,7 @@ impl TransactionPayload {
 impl TransactionContractCall {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let address = StacksAddress::deserialize(fd)?;
-        let contract_name = ContractName::deserialize(fd)?;
+        let contract_name = ClarityName::deserialize(fd)?;
         let function_name = ClarityName::deserialize(fd)?;
         let function_args: Vec<ClarityValue> = {
             let len = fd.read_u32::<BigEndian>()?;
@@ -396,7 +396,7 @@ impl TransactionContractCall {
 
 impl TransactionSmartContract {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
-        let name = ContractName::deserialize(fd)?;
+        let name = ClarityName::deserialize(fd)?;
         let code_body = StacksString::deserialize(fd)?;
         Ok(TransactionSmartContract { name, code_body })
     }
@@ -456,7 +456,7 @@ impl PrincipalData {
             )),
             TypePrefix::PrincipalContract => {
                 let issuer = StandardPrincipalData::deserialize(fd)?;
-                let name = ContractName::deserialize(fd)?;
+                let name = ClarityName::deserialize(fd)?;
                 Ok(PrincipalData::Contract(QualifiedContractIdentifier {
                     issuer,
                     name,
@@ -600,7 +600,7 @@ pub enum TransactionPayload {
 pub struct CoinbasePayload(pub [u8; 32]);
 
 pub struct TransactionSmartContract {
-    pub name: ContractName,
+    pub name: ClarityName,
     pub code_body: StacksString,
 }
 
@@ -625,7 +625,7 @@ pub struct StandardPrincipalData(pub u8, pub [u8; 20]);
 
 pub struct QualifiedContractIdentifier {
     pub issuer: StandardPrincipalData,
-    pub name: ContractName,
+    pub name: ClarityName,
 }
 
 pub enum PrincipalData {
@@ -635,7 +635,22 @@ pub enum PrincipalData {
 
 pub struct TransactionContractCall {
     pub address: StacksAddress,
-    pub contract_name: ContractName,
+    pub contract_name: ClarityName,
     pub function_name: ClarityName,
     pub function_args: Vec<ClarityValue>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hex::decode_hex;
+
+    #[test]
+    fn test_decode_bug() {
+        let input = b"0x00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f230301000000000216982f3ec112a5f5928a5c96a914bd733793b896a51861726b6164696b6f2d676f7665726e616e63652d76332d310770726f706f7365000000060616982f3ec112a5f5928a5c96a914bd733793b896a51d61726b6164696b6f2d7374616b652d706f6f6c2d64696b6f2d76312d32010000000000000000000000000000ef8801000000000000000000000000000003f00e00000028414950313020557064617465204c54567320616e64204c69717569646174696f6e20526174696f730e0000003168747470733a2f2f6769746875622e636f6d2f61726b6164696b6f2d64616f2f61726b6164696b6f2f70756c6c2f3439330b000000010c0000000507616464726573730516982f3ec112a5f5928a5c96a914bd733793b896a50863616e2d6275726e040863616e2d6d696e7404046e616d650d0000002b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f0e7175616c69666965642d6e616d650616982f3ec112a5f5928a5c96a914bd733793b896a52b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f";
+        let bytes = decode_hex(input).unwrap();
+        let mut cursor = Cursor::new(bytes.as_ref());
+        let tx = StacksTransaction::deserialize(&mut cursor);
+        assert!(tx.is_ok());
+    }
 }

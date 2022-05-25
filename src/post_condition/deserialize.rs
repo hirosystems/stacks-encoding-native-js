@@ -4,7 +4,7 @@ use std::{
     io::{Cursor, Read},
 };
 
-use crate::clarity_value::types::{ClarityName, ClarityValue, ContractName};
+use crate::clarity_value::types::{ClarityName, ClarityValue};
 use crate::{address::stacks_address::StacksAddress, serialize_util::DeserializeError};
 
 pub enum TransactionPostCondition {
@@ -26,7 +26,7 @@ pub enum TransactionPostCondition {
 pub enum PostConditionPrincipal {
     Origin,
     Standard(StacksAddress),
-    Contract(StacksAddress, ContractName),
+    Contract(StacksAddress, ClarityName),
 }
 
 #[repr(u8)]
@@ -80,7 +80,7 @@ impl TryFrom<u8> for NonfungibleConditionCode {
 
 pub struct AssetInfo {
     pub contract_address: StacksAddress,
-    pub contract_name: ContractName,
+    pub contract_name: ClarityName,
     pub asset_name: ClarityName,
 }
 
@@ -161,7 +161,7 @@ impl PostConditionPrincipal {
             }
             x if x == PostConditionPrincipalID::Contract as u8 => {
                 let addr = StacksAddress::deserialize(fd)?;
-                let contract_name = ContractName::deserialize(fd)?;
+                let contract_name = ClarityName::deserialize(fd)?;
                 PostConditionPrincipal::Contract(addr, contract_name)
             }
             _ => Err(format!(
@@ -188,7 +188,7 @@ impl StacksAddress {
 impl AssetInfo {
     fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let contract_address = StacksAddress::deserialize(fd)?;
-        let contract_name = ContractName::deserialize(fd)?;
+        let contract_name = ClarityName::deserialize(fd)?;
         let asset_name = ClarityName::deserialize(fd)?;
         Ok(AssetInfo {
             contract_address,

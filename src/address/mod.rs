@@ -4,7 +4,7 @@ use byteorder::ReadBytesExt;
 use neon::prelude::*;
 
 use crate::clarity_value::deserialize::TypePrefix;
-use crate::clarity_value::types::{ContractName, StandardPrincipalData};
+use crate::clarity_value::types::{ClarityName, StandardPrincipalData};
 use crate::hex::encode_hex;
 use crate::neon_util::{arg_as_bytes, arg_as_bytes_copied};
 
@@ -138,7 +138,7 @@ fn decode_clarity_value_to_principal_inner(arg_bytes: &[u8]) -> Result<String, S
                     e
                 ))
             })?;
-            let name = ContractName::deserialize(&mut cursor).or_else(|e| {
+            let name = ClarityName::deserialize(&mut cursor).or_else(|e| {
                 Err(format!(
                     "Failed to deserialize principal contract name to string: {}",
                     e
