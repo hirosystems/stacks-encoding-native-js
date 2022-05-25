@@ -28,6 +28,7 @@ rand = "0.8.5"
 byteorder = "1.4.3"
 
 [dependencies.pprof]
+version = "0.9.1"
 features = ["flamegraph"]
 optional = true
 
