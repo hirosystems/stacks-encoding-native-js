@@ -22,3 +22,22 @@ test('decode value array 3', () => {
   ]);
 });
 
+test('decode value array single byte last arg none', () => {
+  const decoded = decodeClarityValueList('0x00000004010000000000000000000000000098968005164fefdd611090e9a6968dfaa4418480e3be7cc6e905162bdbfd08952341678dd72607eedf89c24447506209');
+  expect(decoded).toEqual([
+    { "hex": "0x0100000000000000000000000000989680", "repr": "u10000000", "type_id": 1 },
+    { "hex": "0x05164fefdd611090e9a6968dfaa4418480e3be7cc6e9", "repr": "'SP17YZQB1228EK9MPHQXA8GC4G3HVWZ66X7VRPMAX", "type_id": 5 },
+    { "hex": "0x05162bdbfd08952341678dd72607eedf89c244475062", "repr": "'SPNXQZ88JMHM2SWDTWK0FVPZH7148HTGCAB3WGBP", "type_id": 5 },
+    { "hex": "0x09", "repr": "none", "type_id": 9 }
+  ]);
+});
+
+test('decode value array single byte last arg bool', () => {
+  const decoded = decodeClarityValueList('0x00000004010000000000000000000000000098968005164fefdd611090e9a6968dfaa4418480e3be7cc6e905162bdbfd08952341678dd72607eedf89c24447506204');
+  expect(decoded).toEqual([
+    { "hex": "0x0100000000000000000000000000989680", "repr": "u10000000", "type_id": 1 },
+    { "hex": "0x05164fefdd611090e9a6968dfaa4418480e3be7cc6e9", "repr": "'SP17YZQB1228EK9MPHQXA8GC4G3HVWZ66X7VRPMAX", "type_id": 5 },
+    { "hex": "0x05162bdbfd08952341678dd72607eedf89c244475062", "repr": "'SPNXQZ88JMHM2SWDTWK0FVPZH7148HTGCAB3WGBP", "type_id": 5 },
+    { "hex": "0x04", "repr": "false", "type_id": 4 }
+  ]);
+});

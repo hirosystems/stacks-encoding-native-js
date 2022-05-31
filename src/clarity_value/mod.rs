@@ -68,7 +68,7 @@ pub fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> 
         let mut byte_cursor = std::io::Cursor::new(val_slice);
         let val_len = val_slice.len() as u64;
         let mut i: u32 = 0;
-        while byte_cursor.position() < val_len - 1 {
+        while byte_cursor.position() < val_len {
             let cursor_pos = byte_cursor.position();
             let clarity_value = ClarityValue::deserialize(&mut byte_cursor, deep)
                 .or_else(|e| cx.throw_error(format!("Error deserializing Clarity value: {}", e)))?;
