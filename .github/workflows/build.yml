@@ -49,10 +49,10 @@ jobs:
       INCLUDE_BUILD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include-linux-arm64-musl == 'true' }}
     steps:
       - uses: actions/checkout@v2
-        if: ${{ env.INCLUDE_BUILD == 'true' }}
+        # if: ${{ env.INCLUDE_BUILD == 'true' }}
       - name: Run on architecture
-        if: ${{ env.INCLUDE_BUILD == 'true' }}
-        uses: uraimo/run-on-arch-action@v2.1.1
+        # if: ${{ env.INCLUDE_BUILD == 'true' }}
+        uses: uraimo/run-on-arch-action@v2.2.0
         with:
           arch: aarch64
           distro: alpine_latest
@@ -72,7 +72,7 @@ jobs:
             cargo build --release
             cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - uses: actions/upload-artifact@v2
-        if: ${{ env.INCLUDE_BUILD == 'true' }}
+        # if: ${{ env.INCLUDE_BUILD == 'true' }}
         with:
           name: linux-arm64-musl
           path: artifacts/linux-arm64-musl.node
