@@ -69,7 +69,7 @@ jobs:
           # Produce a binary artifact and place it in the mounted volume
           run: |
             source $HOME/.cargo/env
-            cargo build --release
+            cargo build --release --verbose
             cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - uses: actions/upload-artifact@v2
         # if: ${{ env.INCLUDE_BUILD == 'true' }}
