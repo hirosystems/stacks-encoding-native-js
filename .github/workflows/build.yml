@@ -66,6 +66,7 @@ jobs:
             apk update
             apk add alpine-sdk git rustup
             rustup-init -y --profile minimal
+            cargo fetch --target aarch64-unknown-linux-musl --verbose
           # Produce a binary artifact and place it in the mounted volume
           run: |
             source $HOME/.cargo/env
