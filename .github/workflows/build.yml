@@ -50,17 +50,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         if: ${{ env.INCLUDE_BUILD == 'true' }}
+      - uses: actions-rs/toolchain@v1
+        if: ${{ env.INCLUDE_BUILD == 'true' }}
+      - name: Cargo fetch
+        if: ${{ env.INCLUDE_BUILD == 'true' }}
+        # perform cargo fetch on host to avoid OOM inside qemu
+        run: cargo fetch --target aarch64-unknown-linux-musl
       - name: Run on architecture
         if: ${{ env.INCLUDE_BUILD == 'true' }}
-        uses: uraimo/run-on-arch-action@v2.1.1
+        uses: uraimo/run-on-arch-action@v2.2.0
         with:
           arch: aarch64
           distro: alpine_latest
-          githubToken: ${{ github.token }}
+          # githubToken: ${{ github.token }}
           setup: |
             mkdir -p "${PWD}/artifacts"
           dockerRunArgs: |
             --volume "${PWD}/artifacts:/artifacts"
+            --volume "$HOME/.cargo/registry:/root/.cargo/registry"
           shell: /bin/ash
           install: |
             apk update
@@ -69,7 +76,7 @@ jobs:
           # Produce a binary artifact and place it in the mounted volume
           run: |
             source $HOME/.cargo/env
-            cargo build --release
+            cargo build --release --offline --verbose
             cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - uses: actions/upload-artifact@v2
         if: ${{ env.INCLUDE_BUILD == 'true' }}
