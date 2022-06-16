@@ -56,7 +56,7 @@ jobs:
         with:
           arch: aarch64
           distro: alpine_latest
-          githubToken: ${{ github.token }}
+          # githubToken: ${{ github.token }}
           setup: |
             mkdir -p "${PWD}/artifacts"
           dockerRunArgs: |
@@ -66,11 +66,12 @@ jobs:
             apk update
             apk add alpine-sdk git rustup
             rustup-init -y --profile minimal
-            source $HOME/.cargo/env
-            cargo fetch --target aarch64-unknown-linux-musl --verbose
+          # source $HOME/.cargo/env
+          # cargo fetch --target aarch64-unknown-linux-musl --verbose
           # Produce a binary artifact and place it in the mounted volume
           run: |
             source $HOME/.cargo/env
+            cargo fetch --target aarch64-unknown-linux-musl --verbose
             cargo build --release --offline --verbose
             cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - uses: actions/upload-artifact@v2
