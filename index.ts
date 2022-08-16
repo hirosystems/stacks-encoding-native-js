@@ -21,7 +21,7 @@ export interface DecodedTxResult {
     post_conditions: TxPostCondition[];
     /** Hex string */
     post_conditions_buffer: string;
-    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase;
+    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase | TxPayloadCoinbaseToAltRecipient | TxPayloadVersionedSmartContract;
 }
 
 export enum PostConditionAssetInfoID {
@@ -181,12 +181,28 @@ export interface TxPayloadCoinbase {
     payload_buffer: string;
 }
 
+export interface TxPayloadCoinbaseToAltRecipient {
+    type_id: TxPayloadTypeID.CoinbaseToAltRecipient;
+    /** Hex string */
+    payload_buffer: string;
+    recipient: PrincipalStandardData | PrincipalContractData;
+}
+
+export interface TxPayloadVersionedSmartContract {
+    type_id: TxPayloadTypeID.VersionedSmartContract;
+    clarity_version: ClarityVersion;
+    contract_name: string;
+    code_body: string;
+}
+
 export enum TxPayloadTypeID {
     TokenTransfer = 0,
     SmartContract = 1,
     ContractCall = 2,
     PoisonMicroblock = 3,
     Coinbase = 4,
+    CoinbaseToAltRecipient = 5,
+    VersionedSmartContract = 6,
 }
 
 export enum PostConditionAuthFlag {
@@ -217,6 +233,11 @@ export enum TxSpendingConditionMultiSigHashMode {
     P2SH = 0x01,
     /** hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh */
     P2WSH = 0x03,
+}
+
+export enum ClarityVersion {
+    Clarity1 = 1,
+    Clarity2 = 2,
 }
 
 export interface DecodedTxSpendingConditionSingleSig {

@@ -19,7 +19,7 @@
     },
     {
       "name": "perf-tests:decode-contract-call-args",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "runtimeArgs": [
         "--expose-gc"
@@ -34,7 +34,7 @@
     },
     {
       "name": "build",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "skipFiles": [
         "<node_internals>/**"

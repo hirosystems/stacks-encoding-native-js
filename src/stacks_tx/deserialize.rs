@@ -328,6 +328,16 @@ impl TransactionPublicKeyEncoding {
     }
 }
 
+impl ClarityVersion {
+    pub fn from_u8(n: u8) -> Option<ClarityVersion> {
+        match n {
+            x if x == ClarityVersion::Clarity1 as u8 => Some(ClarityVersion::Clarity1),
+            x if x == ClarityVersion::Clarity2 as u8 => Some(ClarityVersion::Clarity2),
+            _ => None,
+        }
+    }
+}
+
 impl TransactionPayload {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
         let type_id = fd.read_u8()?;
@@ -358,6 +368,22 @@ impl TransactionPayload {
                 fd.read_exact(&mut payload_bytes)?;
                 let payload = CoinbasePayload(payload_bytes);
                 TransactionPayload::Coinbase(payload)
+            }
+            x if x == TransactionPayloadID::CoinbaseToAltRecipient as u8 => {
+                let mut payload_bytes = [0u8; 32];
+                fd.read_exact(&mut payload_bytes)?;
+                let payload = CoinbasePayload(payload_bytes);
+                let principal = PrincipalData::deserialize(fd)?;
+                TransactionPayload::CoinbaseToAltRecipient(payload, principal)
+            }
+            x if x == TransactionPayloadID::VersionedSmartContract as u8 => {
+                let clarity_version_u8 = fd.read_u8()?;
+                let clarity_version = ClarityVersion::from_u8(clarity_version_u8).ok_or(format!(
+                    "Failed to parse smart contract Clarity version: unknown value {}",
+                    clarity_version_u8
+                ))?;
+                let payload = TransactionSmartContract::deserialize(fd)?;
+                TransactionPayload::VersionedSmartContract(payload, clarity_version)
             }
             _ => {
                 return Err(format!(
@@ -580,6 +606,13 @@ pub enum TransactionPublicKeyEncoding {
 }
 
 #[repr(u8)]
+#[derive(PartialEq, Copy, Clone)]
+pub enum ClarityVersion {
+    Clarity1 = 1,
+    Clarity2 = 2,
+}
+
+#[repr(u8)]
 #[derive(PartialEq)]
 pub enum TransactionPayloadID {
     TokenTransfer = 0,
@@ -587,6 +620,8 @@ pub enum TransactionPayloadID {
     ContractCall = 2,
     PoisonMicroblock = 3,
     Coinbase = 4,
+    CoinbaseToAltRecipient = 5,
+    VersionedSmartContract = 6,
 }
 
 pub enum TransactionPayload {
@@ -595,6 +630,8 @@ pub enum TransactionPayload {
     SmartContract(TransactionSmartContract),
     PoisonMicroblock(StacksMicroblockHeader, StacksMicroblockHeader),
     Coinbase(CoinbasePayload),
+    CoinbaseToAltRecipient(CoinbasePayload, PrincipalData),
+    VersionedSmartContract(TransactionSmartContract, ClarityVersion)
 }
 
 pub struct CoinbasePayload(pub [u8; 32]);
