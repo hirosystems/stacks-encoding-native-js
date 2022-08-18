@@ -122,3 +122,41 @@ test('stacks2.1 - decode tx - versioned smart contract 1', () => {
     }
   );
 });
+
+test('stacks2.1 - decode tx - versioned smart contract 2', () => {
+  const tx = '80800000000400e6c05355e0c990ffad19a5e9bda394a9c50034290000000000000000000000000000000000009172c9841e763c32e827c177491f5228956e6ef1071043be898bfdd694bf3e680309b0666e8fec013a8a453573a8bd707152c9f21aa6f2d5e57c407af672b6f00302000000000602086b762d73746f72650000015628646566696e652d6d61702073746f72652028286b657920286275666620333229292920282876616c7565202862756666203332292929290a0a28646566696e652d7075626c696320286765742d76616c756520286b65792028627566662033322929290a20202020286d6174636820286d61702d6765743f2073746f72652028286b6579206b65792929290a2020202020202020656e74727920286f6b20286765742076616c756520656e74727929290a20202020202020202865727220302929290a0a28646566696e652d7075626c696320287365742d76616c756520286b65792028627566662033322929202876616c75652028627566662033322929290a2020202028626567696e0a2020202020202020286d61702d7365742073746f72652028286b6579206b6579292920282876616c75652076616c75652929290a2020202020202020286f6b2027747275652929290a';
+  const decoded = decodeTransaction(tx);
+
+  expect(decoded).toEqual(
+    {
+      "anchor_mode": 3,
+      "auth": {
+        "origin_condition": {
+          "hash_mode": 0,
+          "key_encoding": 0,
+          "nonce": "0",
+          "signature": "0x009172c9841e763c32e827c177491f5228956e6ef1071043be898bfdd694bf3e680309b0666e8fec013a8a453573a8bd707152c9f21aa6f2d5e57c407af672b6f0",
+          "signer": {
+            "address": "ST3KC0MTNW34S1ZXD36JYKFD3JJMWA01M55DSJ4JE",
+            "address_hash_bytes": "0xe6c05355e0c990ffad19a5e9bda394a9c5003429",
+            "address_version": 26
+          },
+          "tx_fee": "0"
+        },
+        "type_id": 4
+      },
+      "chain_id": 0x80000000,
+      "payload": {
+        "clarity_version": ClarityVersion.Clarity2,
+        "code_body": "(define-map store ((key (buff 32))) ((value (buff 32))))\n\n(define-public (get-value (key (buff 32)))\n    (match (map-get? store ((key key)))\n        entry (ok (get value entry))\n        (err 0)))\n\n(define-public (set-value (key (buff 32)) (value (buff 32)))\n    (begin\n        (map-set store ((key key)) ((value value)))\n        (ok 'true)))\n",
+        "contract_name": "kv-store",
+        "type_id": TxPayloadTypeID.VersionedSmartContract,
+      },
+      "post_condition_mode": 2,
+      "post_conditions": [],
+      "post_conditions_buffer": "0x0200000000",
+      "tx_id": "0x4b5b8b5ab7d35ab73c6dd17d8ab03cd9c71708f27443c600a6b3db9596962c01",
+      "version": TransactionVersion.Testnet,
+    }
+  );
+});
