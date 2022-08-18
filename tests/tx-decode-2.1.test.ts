@@ -86,9 +86,8 @@ test('stacks2.1 - decode tx - coinbase pay to alt - contract principal', () => {
 });
 
 test('stacks2.1 - decode tx - versioned smart contract 1', () => {
-  const filePath = path.join(__dirname, 'data', 'versioned-smart-contract-tx.hex');
-  const coinbaseVersion2_1 = fs.readFileSync(filePath, { encoding: 'ascii' });
-  const decoded = decodeTransaction(coinbaseVersion2_1);
+  const versionedSmartContractTx = '0x80000000000400000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030200000000060205706f782d320000003b3b3b20506f5820746573746e657420636f6e7374616e74730a3b3b204d696e2f6d6178206e756d626572206f6620726577617264206379636c6573';
+  const decoded = decodeTransaction(versionedSmartContractTx);
 
   expect(decoded).toEqual(
     {
@@ -111,14 +110,14 @@ test('stacks2.1 - decode tx - versioned smart contract 1', () => {
       "chain_id": 0,
       "payload": {
         "clarity_version": ClarityVersion.Clarity2,
-        "code_body": expect.stringContaining(";; PoX testnet constants\n;; Min/max number of"),
+        "code_body": ";; PoX testnet constants\n;; Min/max number of reward cycles",
         "contract_name": "pox-2",
         "type_id": TxPayloadTypeID.VersionedSmartContract,
       },
       "post_condition_mode": 2,
       "post_conditions": [],
       "post_conditions_buffer": "0x0200000000",
-      "tx_id": "0x33c573f5ed06f1feecaa4a9df0225e109416dbba9792abb0cd94869bbad4a88a",
+      "tx_id": "0x0c80debd01f7ca45e6126d9da7fd54f61d43a9e7cb41d975b30e17ab423f22e4",
       "version": TransactionVersion.Testnet,
     }
   );
