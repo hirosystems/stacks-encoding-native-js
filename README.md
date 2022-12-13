@@ -10,6 +10,9 @@ Various ASM/SIMD optimizations are used in areas which are prone to causing CPU 
 
 _This project was bootstrapped by [create-neon](https://www.npmjs.com/package/create-neon)._
 
+### Runtime Support
+* Node.js v16+
+
 ### Platform Support
 
 * Linux (glibc) x86_64
@@ -19,10 +22,6 @@ _This project was bootstrapped by [create-neon](https://www.npmjs.com/package/cr
 * MacOS x86_64
 * MacOS aarch64 (Apple Silicon M1)
 * Windows x86_64
-
-### Runtime Support
-* Node.js v16+
-* CommonJS (the examples using ESM syntax are compiled to CJS via Typescript)
 
 ## Installation and Usage
 
@@ -76,7 +75,8 @@ const hex = '0x0c00000007066163746976650307616464726573730516142a7f9b4d4c7d2fdbe
 const decoded = decodeClarityValue(hex);
 ```
 
-#### Decoded Clarity value output result
+Decoded Clarity value output result:
+
 <details>
 <summary>Expand</summary>
 
@@ -294,7 +294,7 @@ const rawTx = '0000000001040089f5fd1f719e4449c980de38e3504be6770a269800000000000
 const decoded = decodeTransaction(rawTx);
 ```
 
-#### Decoded transaction output result
+Decoded transaction output result:
 <details>
 <summary>Expand</summary>
 
