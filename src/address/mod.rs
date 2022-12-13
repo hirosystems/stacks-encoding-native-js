@@ -146,7 +146,7 @@ fn decode_clarity_value_to_principal_inner(arg_bytes: &[u8]) -> Result<String, S
             })?;
             let c32_addr = c32_address(issuer.0, &issuer.1)
                 .or_else(|e| Err(format!("Failed to encode principal to c32 address: {}", e)))?;
-            format!("{}.{}", name, c32_addr)
+            format!("{}.{}", c32_addr, name)
         }
         _ => Err(format!("Type prefix {} to is not a principal", prefix_byte))?,
     };

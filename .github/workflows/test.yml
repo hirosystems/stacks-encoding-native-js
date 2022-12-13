@@ -20,6 +20,9 @@ jobs:
         run: npm run test:cargo
       - name: Test js
         run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
 
   test_linux-x64-glibc:
     runs-on: ubuntu-latest
@@ -37,6 +40,9 @@ jobs:
         run: npm run test:cargo
       - name: Test js
         run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
 
   test_win-x64:
     runs-on: windows-2022
@@ -54,6 +60,9 @@ jobs:
         run: npm run test:cargo
       - name: Test js
         run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
 
   test_darwin-x64:
     runs-on: macos-latest
@@ -71,3 +80,6 @@ jobs:
         run: npm run test:cargo
       - name: Test js
         run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
