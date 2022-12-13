@@ -496,6 +496,26 @@ impl NeonJsSerialize for TransactionPayload {
                 let payload_buffer = cx.string(encode_hex(&buf.0));
                 obj.set(cx, "payload_buffer", payload_buffer)?;
             }
+            TransactionPayload::CoinbaseToAltRecipient(ref buf, ref address) => {
+                let type_id = cx.number(TransactionPayloadID::CoinbaseToAltRecipient as u8);
+                obj.set(cx, "type_id", type_id)?;
+
+                let payload_buffer = cx.string(encode_hex(&buf.0));
+                obj.set(cx, "payload_buffer", payload_buffer)?;
+
+                let recipient_obj = cx.empty_object();
+                address.neon_js_serialize(cx, &recipient_obj, extra_ctx)?;
+                obj.set(cx, "recipient", recipient_obj)?;
+            }
+            TransactionPayload::VersionedSmartContract(ref smart_contract, ref version) => {
+                let type_id = cx.number(TransactionPayloadID::VersionedSmartContract as u8);
+                obj.set(cx, "type_id", type_id)?;
+
+                let type_id = cx.number(*version as u8);
+                obj.set(cx, "clarity_version", type_id)?;
+
+                smart_contract.neon_js_serialize(cx, obj, extra_ctx)?;
+            }
         }
         Ok(())
     }
