@@ -60,7 +60,6 @@ jobs:
             mkdir -p "${PWD}/artifacts"
           dockerRunArgs: |
             --volume "${PWD}/artifacts:/artifacts"
-            --volume "$HOME/.cargo/registry:/root/.cargo/registry"
           shell: /bin/ash
           install: |
             apk update
