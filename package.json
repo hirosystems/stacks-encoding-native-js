@@ -21,6 +21,10 @@
   },
   "author": "Matthew Little",
   "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hirosystems/stacks-encoding-native-js.git"
+  },
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "cargo-cp-artifact": "^0.1",
