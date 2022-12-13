@@ -37,6 +37,7 @@
     "detect-libc": "^2.0.1"
   },
   "files": [
+    "README.md",
     "native/**/*",
     "index.js",
     "index.d.ts",
