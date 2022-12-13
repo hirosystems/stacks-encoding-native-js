@@ -2,7 +2,6 @@ const sen = require('../..');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const open = require('open');
 
 /*
 const gzipped = zlib.gzipSync(fs.readFileSync(path.join(__dirname, 'sampled-contract-call-args.txt')));
@@ -45,5 +44,3 @@ fs.writeFileSync(outputFile, profile);
 
 console.log(`Took ${elapsed} seconds`);
 console.log(`Output: ${outputFile}`);
-
-open(outputFile);

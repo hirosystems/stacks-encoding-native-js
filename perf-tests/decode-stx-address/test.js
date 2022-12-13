@@ -1,7 +1,6 @@
 const sen = require('../..');
 const fs = require('fs');
 const path = require('path');
-const open = require('open');
 
 const startTime = Date.now();
 
@@ -15,5 +14,3 @@ fs.writeFileSync(outputFile, profile);
 
 console.log(`Took ${elapsed} seconds`);
 console.log(`Output: ${outputFile}`);
-
-open(outputFile);

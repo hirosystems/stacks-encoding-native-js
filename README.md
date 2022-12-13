@@ -1,10 +1,12 @@
 # stacks-encoding-native-js
 
 [![npm version](https://badge.fury.io/js/stacks-encoding-native-js.svg)](https://www.npmjs.com/package/stacks-encoding-native-js)
+[![test](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/test.yml/badge.svg)](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/test.yml)
+[![build](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/build.yml/badge.svg)](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/build.yml)
 
 `stacks-encoding-native-js` is a Node.js [native addon](https://nodejs.org/api/addons.html) library written in Rust, which provides functions for decoding binary/wire formats used in the Stacks blockchain. Features include Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, and more. 
 
-Various ASM/SIMD optimizations are used in areas which are prone to causing CPU bottlenecks when used in hot paths, e.g. storing raw Clarity values in a database, and decoding on the fly.
+Various ASM/SIMD optimizations are used in areas which are prone to causing CPU bottlenecks when used in hot paths, e.g. decoding raw Clarity values on the fly.
 
 _This project was bootstrapped by [create-neon](https://www.npmjs.com/package/create-neon)._
 
@@ -41,7 +43,7 @@ _Example Clarity value:_
   (balance u2000) 
   (ping (ok 250)) 
   (public_key (some 0x02d4dada83bff981f0cb7ebafcfc6fc7cb5e078b9ee2302a93aae19fb90f872e58)) 
-  (tags (list u"contributor" u"og \\u{e2ad90}" u"clarity"))
+  (tags (list u"contributor" u"og \u{e2ad90}" u"clarity"))
 )
 ```
 </details>

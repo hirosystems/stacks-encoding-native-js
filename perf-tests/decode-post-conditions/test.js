@@ -2,7 +2,6 @@ const sen = require('../..');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const open = require('open');
 
 function getSampleInput() {
     const inputFilePath = path.join(__dirname, 'sampled-post-conditions.txt.gz');
@@ -39,5 +38,3 @@ fs.writeFileSync(outputFile, profile);
 
 console.log(`Took ${elapsed} seconds`);
 console.log(`Output: ${outputFile}`);
-
-open(outputFile);
