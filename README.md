@@ -53,10 +53,10 @@ _Example Clarity value:_
 import * as assert from 'node:assert';
 import { decodeClarityValueToRepr } from 'stacks-encoding-native-js';
 
-// A serialized hex string of the example Clarity value
+// Serialized hex string of the example Clarity value (can also be a Buffer / Uint8Array)
 const hex = '0x0c00000007066163746976650307616464726573730516142a7f9b4d4c7d2fdbe69c0b6733a484f37bbc3b05616c6961730d00000005416c6963650762616c616e636501000000000000000000000000000007d00470696e670700000000000000000000000000000000fa0a7075626c69635f6b65790a020000002102d4dada83bff981f0cb7ebafcfc6fc7cb5e078b9ee2302a93aae19fb90f872e5804746167730b000000030e0000000b636f6e7472696275746f720e000000066f6720e2ad900e00000007636c6172697479';
 
-const reprStr = decodeClarityValueToRepr(ALICE_TUPLE_CV_HEX);
+const reprStr = decodeClarityValueToRepr(hex);
 
 assert.strictEqual(
   reprStr, 
@@ -68,6 +68,9 @@ assert.strictEqual(
 ```ts
 import * as assert from 'node:assert';
 import { decodeClarityValue } from 'stacks-encoding-native-js';
+
+// Serialized hex string of the example Clarity value (can also be a Buffer / Uint8Array)
+const hex = '0x0c00000007066163746976650307616464726573730516142a7f9b4d4c7d2fdbe69c0b6733a484f37bbc3b05616c6961730d00000005416c6963650762616c616e636501000000000000000000000000000007d00470696e670700000000000000000000000000000000fa0a7075626c69635f6b65790a020000002102d4dada83bff981f0cb7ebafcfc6fc7cb5e078b9ee2302a93aae19fb90f872e5804746167730b000000030e0000000b636f6e7472696275746f720e000000066f6720e2ad900e00000007636c6172697479';
 
 // Decode into JSON object
 const decoded = decodeClarityValue(hex);
@@ -160,6 +163,7 @@ assert.deepStrictEqual(decoded, {
 #### Decode serialized Clarity value to typed object
 
 ```ts
+import * as assert from 'node:assert';
 import { 
   decodeClarityValue,
   ClarityTypeID,
@@ -175,7 +179,9 @@ import {
   ClarityValueOptionalSome,
   ClarityValueUInt,
 } from 'stacks-encoding-native-js';
-import * as assert from 'node:assert';
+
+// Serialized hex string of the example Clarity value (can also be a Buffer / Uint8Array)
+const hex = '0x0c00000007066163746976650307616464726573730516142a7f9b4d4c7d2fdbe69c0b6733a484f37bbc3b05616c6961730d00000005416c6963650762616c616e636501000000000000000000000000000007d00470696e670700000000000000000000000000000000fa0a7075626c69635f6b65790a020000002102d4dada83bff981f0cb7ebafcfc6fc7cb5e078b9ee2302a93aae19fb90f872e5804746167730b000000030e0000000b636f6e7472696275746f720e000000066f6720e2ad900e00000007636c6172697479';
 
 // Provide a typed view of the decoded value
 const decoded = decodeClarityValue<ClarityValueTuple<{
@@ -186,7 +192,7 @@ const decoded = decodeClarityValue<ClarityValueTuple<{
   ping: ClarityValueResponseOk<ClarityValueInt>;
   public_key: ClarityValueOptionalSome<ClarityValueBuffer>;
   tags: ClarityValueList<ClarityValueStringUtf8>;
-}>>(ALICE_TUPLE_CV_HEX);
+}>>(hex);
 
 // The annotated types are _not_ automatically checked at runtime, so type checks are needed for error handling
 assert.strictEqual(decoded.type_id, ClarityTypeID.Tuple);
@@ -209,6 +215,47 @@ assert.strictEqual(decoded.data.balance.value, '2000');
 assert.strictEqual(decoded.data.ping.value.value, '250');
 assert.strictEqual(decoded.data.public_key.value.buffer, '0x02d4dada83bff981f0cb7ebafcfc6fc7cb5e078b9ee2302a93aae19fb90f872e58');
 assert.deepStrictEqual(decoded.data.tags.list.map(v => v.data), ['contributor', 'og ⭐', 'clarity']);
+```
+
+### Decoding principals
+
+#### Principal from serialized Clarity value
+
+```ts
+import * as assert from 'node:assert';
+import { decodeClarityValueToPrincipal } from 'stacks-encoding-native-js';
+
+const standardPrincipal = decodeClarityValueToPrincipal('0x0516a13dce8114be0f707f94470a2e5e86eb402f2923');
+assert.strictEqual(principal, 'SP2GKVKM12JZ0YW3ZJH3GMBJYGVNM0BS94ERA45AM');
+
+const contractPrincipal = decodeClarityValueToPrincipal('0x0616a6a7a70f41adbe8eae708ed7ec2cbf41a272182014626974636f696e2d6d6f6e6b6579732d6c616273');
+assert.strictEqual(contractPrincipal, 'SP2KAF9RF86PVX3NEE27DFV1CQX0T4WGR41X3S45C.bitcoin-monkeys-labs');
+```
+
+#### Stacks address from parts
+
+```ts
+import * as assert from 'node:assert';
+import { stacksAddressFromParts } from 'stacks-encoding-native-js';
+
+const stacksAddressData = {
+  version: 26,
+  hash160: '0xcd1f5bc9aa49e7417cee3e5dba1a92567da41af6'
+};
+
+const stacksAddress = stacksAddressFromParts(stacksAddressData.version, stacksAddressData.hash160);
+assert.strictEqual(stacksAddress, 'ST36HYPY9N94YEGBWXRZ5VEGTJ9B7V90TYTM9HGTJ');
+```
+
+#### Stacks address to parts
+
+```ts
+import * as assert from 'node:assert';
+import { decodeStacksAddress } from 'stacks-encoding-native-js';
+
+const [version, hash160] = decodeStacksAddress('ST36HYPY9N94YEGBWXRZ5VEGTJ9B7V90TYTM9HGTJ');
+assert.strictEqual(version, 26);
+assert.strictEqual(hash160, '0xcd1f5bc9aa49e7417cee3e5dba1a92567da41af6');
 ```
 
 ## Project Layout
