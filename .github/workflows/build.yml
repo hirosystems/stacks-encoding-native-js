@@ -69,7 +69,7 @@ jobs:
           run: |
             source $HOME/.cargo/env
             export CARGO_NET_GIT_FETCH_WITH_CLI=true
-            cargo build --release --offline --verbose
+            cargo build --release --verbose
             cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
       - uses: actions/upload-artifact@v2
         with:
