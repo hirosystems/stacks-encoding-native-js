@@ -30,7 +30,7 @@ jobs:
     container:
       image: rust:alpine
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install deps
         run: apk add alpine-sdk git nodejs npm
       - name: npm i
@@ -46,7 +46,7 @@ jobs:
   build_linux-arm64-musl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           target: aarch64-unknown-linux-musl
@@ -80,7 +80,7 @@ jobs:
   build_linux-x64-glibc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
       - uses: actions/setup-node@v2
         with:
@@ -98,7 +98,7 @@ jobs:
   build_linux-arm64-glibc:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           target: aarch64-unknown-linux-gnu
@@ -129,7 +129,7 @@ jobs:
   build_win-x64:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
       - uses: actions/setup-node@v2
         with:
@@ -147,7 +147,7 @@ jobs:
   build_darwin-x64:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
       - uses: actions/setup-node@v2
         with:
@@ -165,7 +165,7 @@ jobs:
   build_darwin-arm64:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           target: aarch64-apple-darwin
@@ -201,7 +201,7 @@ jobs:
       NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha.0' }}
       NPM_PACKAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-tag || 'alpha' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
