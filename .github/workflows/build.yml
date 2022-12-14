@@ -37,7 +37,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: linux-x64-musl
           path: native/linux-x64-musl.node
@@ -71,7 +71,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: linux-arm64-musl
           path: native/linux-arm64-musl.node
@@ -89,7 +89,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: linux-x64-glibc
           path: native/linux-x64-glibc.node
@@ -120,7 +120,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: linux-arm64-glibc
           path: native/linux-arm64-glibc.node
@@ -138,7 +138,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: win32-x64
           path: native/win32-x64.node
@@ -156,7 +156,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: darwin-x64
           path: native/darwin-x64.node
@@ -181,7 +181,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: darwin-arm64
           path: native/darwin-arm64.node
@@ -226,7 +226,7 @@ jobs:
         run: |
           npm pack
           mv "stacks-encoding-native-js-$NPM_PACKAGE_VERSION.tgz" "stacks-encoding-native-js.tgz"
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: stacks-encoding-native-js.tgz
           path: stacks-encoding-native-js.tgz
