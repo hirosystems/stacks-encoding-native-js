@@ -45,58 +45,28 @@ jobs:
 
   build_linux-arm64-musl:
     runs-on: ubuntu-latest
-    env:
-      INCLUDE_BUILD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.include-linux-arm64-musl == 'true' }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
-      - name: Run on architecture
-        uses: uraimo/run-on-arch-action@v2.2.0
         with:
-          arch: aarch64
-          distro: alpine_latest
-          # githubToken: ${{ github.token }}
-          setup: |
-            mkdir -p "${PWD}/artifacts"
-          dockerRunArgs: |
-            --volume "${PWD}/artifacts:/artifacts"
-          shell: /bin/ash
-          install: |
-            apk update
-            apk add alpine-sdk git rustup
-            rustup-init -y --profile minimal
-          # Produce a binary artifact and place it in the mounted volume
-          run: |
-            source $HOME/.cargo/env
-            export CARGO_NET_GIT_FETCH_WITH_CLI=true
-            cargo build --release --verbose
-            cp target/release/libstacks_encoding_native_js.so /artifacts/linux-arm64-musl.node
-      - uses: actions/upload-artifact@v2
+          target: aarch64-unknown-linux-musl
+      - uses: actions/setup-node@v2
         with:
-          name: linux-arm64-musl
-          path: artifacts/linux-arm64-musl.node
-          if-no-files-found: error
-
-  build_linux-arm64-musl_old:
-    if: ${{ false }} # disabled, this compiles but the binary does not load correctly
-    runs-on: ubuntu-latest
-    container:
-      image: rust:alpine
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install deps
-        run: apk add alpine-sdk git nodejs npm
-      - name: Install rustup aarch64-unknown-linux-musl target
-        run: rustup target add aarch64-unknown-linux-musl
+          node-version: '16'
+      - name: Download aarch64-linux-musl-cross toolchain
+        run: curl -O -C - https://musl.cc/aarch64-linux-musl-cross.tgz
+      - name: Install aarch64-linux-musl-cross toolchain
+        run: tar xf aarch64-linux-musl-cross.tgz
       - name: Configure linux-arm64-musl cross compile
         run: |
-          curl -O https://musl.cc/aarch64-linux-musl-cross.tgz
-          tar xf aarch64-linux-musl-cross.tgz
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
-          echo "CC=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
           echo "CC_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
-          echo "CXX_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-g++" >> $GITHUB_ENV
+          echo "CXX_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl--g++" >> $GITHUB_ENV
+          echo "AR_aarch64_unknown_linux_musl=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_AR=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-ar" >> $GITHUB_ENV
+          echo "TARGET_PLATFORM=linux" >> $GITHUB_ENV
           echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
+          echo "TARGET_LIBC=musl" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
