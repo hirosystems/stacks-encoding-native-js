@@ -27,12 +27,28 @@ jobs:
 
   build_linux-x64-musl:
     runs-on: ubuntu-latest
-    container:
-      image: rust:alpine
     steps:
       - uses: actions/checkout@v3
-      - name: Install deps
-        run: apk add alpine-sdk git nodejs npm
+      - uses: actions-rs/toolchain@v1
+        with:
+          target: x86_64-unknown-linux-musl
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Download x86_64-linux-musl-cross toolchain
+        run: curl -O -C - https://musl.cc/x86_64-linux-musl-cross.tgz
+      - name: Install x86_64-linux-musl-cross toolchain
+        run: tar xf x86_64-linux-musl-cross.tgz
+      - name: Configure linux-x64-musl cross compile
+        run: |
+          echo "CC_x86_64_unknown_linux_musl=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CXX_x86_64_unknown_linux_musl=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl--g++" >> $GITHUB_ENV
+          echo "AR_x86_64_unknown_linux_musl=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_AR=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl-ar" >> $GITHUB_ENV
+          echo "TARGET_PLATFORM=linux" >> $GITHUB_ENV
+          echo "TARGET_ARCH=x64" >> $GITHUB_ENV
+          echo "TARGET_LIBC=musl" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
