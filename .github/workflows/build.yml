@@ -99,6 +99,8 @@ jobs:
       image: node:16-stretch
       options: --user root
     steps:
+      - name: Change Owner of Container Working Directory
+        run: chown <uid>:<gid> .
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
