@@ -30,6 +30,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
         run: curl -O -C - https://musl.cc/x86_64-linux-musl-cross.tgz
       - name: Install x86_64-linux-musl-cross toolchain
@@ -64,6 +65,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
         run: curl -O -C - https://musl.cc/aarch64-linux-musl-cross.tgz
       - name: Install aarch64-linux-musl-cross toolchain
@@ -97,6 +99,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Install rust toolchain
         run: rustup toolchain install stable --target x86_64-unknown-linux-gnu --profile minimal --no-self-update
       - name: npm i
@@ -109,6 +112,7 @@ jobs:
           path: native/linux-x64-glibc.node
           if-no-files-found: error
 
+  # TODO: compile in stretch debian image
   build_linux-arm64-glibc:
     runs-on: ubuntu-18.04
     steps:
@@ -119,6 +123,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Install cross compile deps
         run: |
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross gcc-aarch64-linux-gnu qemu-user
@@ -150,6 +155,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
@@ -170,6 +176,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
@@ -190,6 +197,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Configure macos-arm64 cross compile
         run: |
           echo "SDKROOT=$(xcrun -sdk macosx --show-sdk-path)" >> $GITHUB_ENV
