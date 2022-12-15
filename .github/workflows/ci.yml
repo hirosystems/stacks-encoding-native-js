@@ -221,6 +221,10 @@ jobs:
           arch: aarch64
           distro: ubuntu_latest
           githubToken: ${{ github.token }}
+          install: |
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install --no-install-recommends --yes nodejs
           run: |
             npm run test:js
 
