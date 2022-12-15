@@ -222,9 +222,9 @@ jobs:
           distro: ubuntu_latest
           githubToken: ${{ github.token }}
           install: |
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update
-            apt-get install --no-install-recommends --yes nodejs
+            apt-get update && apt-get install -y curl
+            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            apt-get install -y --no-install-recommends nodejs
           run: |
             npm run test:js
 
