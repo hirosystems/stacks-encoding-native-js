@@ -167,7 +167,7 @@ jobs:
           if-no-files-found: error
 
   build_darwin-x64:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -188,7 +188,7 @@ jobs:
           if-no-files-found: error
 
   build_darwin-arm64:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -330,7 +330,7 @@ jobs:
         run: npm i && npm test
 
   test_darwin-x64:
-    runs-on: macos-latest
+    runs-on: macos-12
     needs:
       - build_darwin-x64
     steps:
