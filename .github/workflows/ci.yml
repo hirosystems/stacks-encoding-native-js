@@ -24,9 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: x86_64-unknown-linux-musl
+          targets: x86_64-unknown-linux-musl
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -58,9 +58,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-unknown-linux-musl
+          targets: aarch64-unknown-linux-musl
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -113,9 +113,9 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-unknown-linux-gnu
+          targets: aarch64-unknown-linux-gnu
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -144,7 +144,9 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -162,7 +164,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -180,9 +184,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-apple-darwin
+          targets: aarch64-apple-darwin
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
