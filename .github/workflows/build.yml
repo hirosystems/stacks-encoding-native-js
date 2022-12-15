@@ -232,6 +232,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:16-alpine
+    needs:
+      - build_linux-x64-musl
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
