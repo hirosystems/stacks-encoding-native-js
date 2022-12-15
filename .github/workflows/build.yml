@@ -220,6 +220,8 @@ jobs:
         working-directory: native
       - name: npm i
         run: npm i
+      - name: npm build:ts
+        run: npm run build:ts
       - name: Test js
         run: npm run test:js
       - name: Test examples
