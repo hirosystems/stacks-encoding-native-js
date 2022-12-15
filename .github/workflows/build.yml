@@ -97,7 +97,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:16-stretch
-      options: --user github
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
