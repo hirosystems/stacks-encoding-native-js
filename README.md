@@ -14,10 +14,8 @@ _This project was bootstrapped by [create-neon](https://www.npmjs.com/package/cr
 
 ### Platform Support
 
-* Linux (glibc) x86_64
-* Linux (glibc) aarch64
-* Linux (musl) x86_64
-* Linux (musl) aarch64
+* Linux x86_64
+* Linux aarch64
 * MacOS x86_64
 * MacOS aarch64 (Apple Silicon M1)
 * Windows x86_64

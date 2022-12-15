@@ -20,7 +20,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  build_linux-x64-musl:
+  build_linux-x64:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -44,18 +44,17 @@ jobs:
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_AR=$(pwd)/x86_64-linux-musl-cross/bin/x86_64-linux-musl-ar" >> $GITHUB_ENV
           echo "TARGET_PLATFORM=linux" >> $GITHUB_ENV
           echo "TARGET_ARCH=x64" >> $GITHUB_ENV
-          echo "TARGET_LIBC=musl" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
         run: npm run build:cargo
       - uses: actions/upload-artifact@v3
         with:
-          name: linux-x64-musl
-          path: native/linux-x64-musl.node
+          name: linux-x64
+          path: native/linux-x64.node
           if-no-files-found: error
 
-  build_linux-arm64-musl:
+  build_linux-arm64:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -79,72 +78,14 @@ jobs:
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_AR=$(pwd)/aarch64-linux-musl-cross/bin/aarch64-linux-musl-ar" >> $GITHUB_ENV
           echo "TARGET_PLATFORM=linux" >> $GITHUB_ENV
           echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
-          echo "TARGET_LIBC=musl" >> $GITHUB_ENV
       - name: npm i
         run: npm i
       - name: Build
         run: npm run build:cargo
       - uses: actions/upload-artifact@v3
         with:
-          name: linux-arm64-musl
-          path: native/linux-arm64-musl.node
-          if-no-files-found: error
-
-  build_linux-x64-glibc:
-    runs-on: ubuntu-22.04
-    container:
-      image: rust:buster
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - uses: Swatinem/rust-cache@v2
-      - name: npm i
-        run: npm i
-      - name: Build
-        run: npm run build:cargo
-      - uses: actions/upload-artifact@v3
-        with:
-          name: linux-x64-glibc
-          path: native/linux-x64-glibc.node
-          if-no-files-found: error
-
-  build_linux-arm64-glibc:
-    runs-on: ubuntu-22.04
-    container:
-      image: rust:buster
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-unknown-linux-gnu
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - uses: Swatinem/rust-cache@v2
-      - name: Install cross compile deps
-        run: |
-          apt-get update && apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross gcc-aarch64-linux-gnu qemu-user
-      - name: Configure linux-arm64 cross compile
-        run: |
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo 'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER="qemu-aarch64 -L /usr/aarch64-linux-gnu"' >> $GITHUB_ENV
-          echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-          echo "TARGET_ARCH=arm64" >> $GITHUB_ENV
-      - name: npm i
-        run: npm i
-      - name: Build
-        run: npm run build:cargo
-      - uses: actions/upload-artifact@v3
-        with:
-          name: linux-arm64-glibc
-          path: native/linux-arm64-glibc.node
+          name: linux-arm64
+          path: native/linux-arm64.node
           if-no-files-found: error
 
   build_win-x64:
@@ -218,12 +159,12 @@ jobs:
   test_linux-arm64-glibc:
     runs-on: ubuntu-22.04
     needs:
-      - build_linux-arm64-glibc
+      - build_linux-arm64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: linux-arm64-glibc
+          name: linux-arm64
           path: native
       - name: npm i
         run: npm i
@@ -245,12 +186,12 @@ jobs:
   test_linux-arm64-musl:
     runs-on: ubuntu-22.04
     needs:
-      - build_linux-arm64-musl
+      - build_linux-arm64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: linux-arm64-musl
+          name: linux-arm64
           path: native
       - name: npm i
         run: npm i
@@ -272,12 +213,12 @@ jobs:
     container:
       image: node:16-bullseye
     needs:
-      - build_linux-x64-glibc
+      - build_linux-x64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: linux-x64-glibc
+          name: linux-x64
           path: native
       - name: npm i
         run: npm i
@@ -294,12 +235,12 @@ jobs:
     container:
       image: node:16-alpine
     needs:
-      - build_linux-x64-musl
+      - build_linux-x64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: linux-x64-musl
+          name: linux-x64
           path: native
       - name: npm i
         run: npm i
@@ -354,10 +295,8 @@ jobs:
   npm-package:
     runs-on: ubuntu-22.04
     needs:
-      - build_linux-x64-musl
-      - build_linux-arm64-musl
-      - build_linux-x64-glibc
-      - build_linux-arm64-glibc
+      - build_linux-x64
+      - build_linux-arm64
       - build_win-x64
       - build_darwin-x64
       - build_darwin-arm64
