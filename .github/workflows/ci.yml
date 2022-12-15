@@ -96,12 +96,13 @@ jobs:
       image: rust:buster
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
       - uses: Swatinem/rust-cache@v2
-      - name: Install rust toolchain
-        run: rustup toolchain install stable --target x86_64-unknown-linux-gnu --profile minimal --no-self-update
       - name: npm i
         run: npm i
       - name: Build
@@ -112,9 +113,10 @@ jobs:
           path: native/linux-x64-glibc.node
           if-no-files-found: error
 
-  # TODO: compile in stretch debian image
   build_linux-arm64-glibc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
+    container:
+      image: rust:buster
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
