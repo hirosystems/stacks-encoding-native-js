@@ -13,23 +13,24 @@ on:
 
 jobs:
   cancel-previous-runs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.9.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
   build_linux-x64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: x86_64-unknown-linux-musl
+          targets: x86_64-unknown-linux-musl
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
         run: curl -O -C - https://musl.cc/x86_64-linux-musl-cross.tgz
       - name: Install x86_64-linux-musl-cross toolchain
@@ -55,15 +56,16 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-unknown-linux-musl
+          targets: aarch64-unknown-linux-musl
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
         run: curl -O -C - https://musl.cc/aarch64-linux-musl-cross.tgz
       - name: Install aarch64-linux-musl-cross toolchain
@@ -89,16 +91,18 @@ jobs:
           if-no-files-found: error
 
   build_linux-x64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: rust:buster
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - name: Install rust toolchain
-        run: rustup toolchain install stable --target x86_64-unknown-linux-gnu --profile minimal --no-self-update
+      - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
@@ -110,18 +114,21 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-glibc:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
+    container:
+      image: rust:buster
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-unknown-linux-gnu
+          targets: aarch64-unknown-linux-gnu
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Install cross compile deps
         run: |
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross gcc-aarch64-linux-gnu qemu-user
+          apt-get update && apt-get install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross gcc-aarch64-linux-gnu qemu-user
       - name: Configure linux-arm64 cross compile
         run: |
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
@@ -144,10 +151,13 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
@@ -159,13 +169,16 @@ jobs:
           if-no-files-found: error
 
   build_darwin-x64:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
@@ -177,15 +190,16 @@ jobs:
           if-no-files-found: error
 
   build_darwin-arm64:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-apple-darwin
+          targets: aarch64-apple-darwin
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - uses: Swatinem/rust-cache@v2
       - name: Configure macos-arm64 cross compile
         run: |
           echo "SDKROOT=$(xcrun -sdk macosx --show-sdk-path)" >> $GITHUB_ENV
@@ -202,7 +216,7 @@ jobs:
           if-no-files-found: error
 
   test_linux-arm64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-arm64-glibc
     steps:
@@ -229,7 +243,7 @@ jobs:
             npm run test:js
 
   test_linux-arm64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-arm64-musl
     steps:
@@ -254,7 +268,7 @@ jobs:
             npm run test:js
 
   test_linux-x64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: node:16-bullseye
     needs:
@@ -276,7 +290,7 @@ jobs:
         run: npm i && npm test
 
   test_linux-x64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: node:16-alpine
     needs:
@@ -318,7 +332,7 @@ jobs:
         run: npm i && npm test
 
   test_darwin-x64:
-    runs-on: macos-latest
+    runs-on: macos-12
     needs:
       - build_darwin-x64
     steps:
@@ -338,7 +352,7 @@ jobs:
         run: npm i && npm test
 
   npm-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-x64-musl
       - build_linux-arm64-musl
