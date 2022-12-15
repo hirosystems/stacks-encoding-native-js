@@ -96,12 +96,14 @@ jobs:
   build_linux-x64-glibc:
     runs-on: ubuntu-latest
     container:
-      image: node:16-stretch
+      image: rust:buster
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v3
         with:
-          targets: x86_64-unknown-linux-gnu
+          node-version: '16'
+      - name: Install rust toolchain
+        run: rustup toolchain install stable --target x86_64-unknown-linux-gnu --profile minimal --no-self-update
       - name: npm i
         run: npm i
       - name: Build
