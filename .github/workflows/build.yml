@@ -218,12 +218,29 @@ jobs:
         with:
           name: linux-x64-glibc
           path: native
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: native
       - name: npm i
         run: npm i
-      - name: npm build:ts
+      - name: Build js
+        run: npm run build:ts
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
+
+  test_linux-x64-musl:
+    runs-on: ubuntu-latest
+    container:
+      image: node:16-alpine
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x64-musl
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
         run: npm run build:ts
       - name: Test js
         run: npm run test:js
