@@ -13,15 +13,15 @@ on:
 
 jobs:
   cancel-previous-runs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
   build_linux-x64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -56,7 +56,7 @@ jobs:
           if-no-files-found: error
 
   build_linux-arm64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -91,7 +91,7 @@ jobs:
           if-no-files-found: error
 
   build_linux-x64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: rust:buster
     steps:
@@ -214,7 +214,7 @@ jobs:
           if-no-files-found: error
 
   test_linux-arm64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-arm64-glibc
     steps:
@@ -241,7 +241,7 @@ jobs:
             npm run test:js
 
   test_linux-arm64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-arm64-musl
     steps:
@@ -266,7 +266,7 @@ jobs:
             npm run test:js
 
   test_linux-x64-glibc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: node:16-bullseye
     needs:
@@ -288,7 +288,7 @@ jobs:
         run: npm i && npm test
 
   test_linux-x64-musl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: node:16-alpine
     needs:
@@ -350,7 +350,7 @@ jobs:
         run: npm i && npm test
 
   npm-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - build_linux-x64-musl
       - build_linux-arm64-musl
