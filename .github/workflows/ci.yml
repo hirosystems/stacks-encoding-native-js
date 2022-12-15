@@ -1,4 +1,4 @@
-name: build
+name: CI
 
 on:
   push:
@@ -10,11 +10,6 @@ on:
       npm-package-tag:
         description: Specify the tag to be used for npm publish, e.g. `latest`, `beta`, `alpha`
         required: true
-      include-linux-arm64-musl:
-        description: 'Build the linux-arm64-musl artifact, can take up to 2 hours'
-        required: true 
-        type: boolean
-        default: true
 
 jobs:
   cancel-previous-runs:
@@ -95,12 +90,15 @@ jobs:
 
   build_linux-x64-glibc:
     runs-on: ubuntu-latest
+    container:
+      image: rust:buster
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+      - name: Install rust toolchain
+        run: rustup toolchain install stable --target x86_64-unknown-linux-gnu --profile minimal --no-self-update
       - name: npm i
         run: npm i
       - name: Build
@@ -202,6 +200,142 @@ jobs:
           name: darwin-arm64
           path: native/darwin-arm64.node
           if-no-files-found: error
+
+  test_linux-arm64-glibc:
+    runs-on: ubuntu-latest
+    needs:
+      - build_linux-arm64-glibc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-arm64-glibc
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run on arch
+        with:
+          arch: aarch64
+          distro: ubuntu_latest
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update && apt-get install -y curl
+            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            apt-get install -y --no-install-recommends nodejs
+          run: |
+            npm run test:js
+
+  test_linux-arm64-musl:
+    runs-on: ubuntu-latest
+    needs:
+      - build_linux-arm64-musl
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-arm64-musl
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run on arch
+        with:
+          arch: aarch64
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          install: |
+            apk add nodejs npm
+          run: |
+            npm run test:js
+
+  test_linux-x64-glibc:
+    runs-on: ubuntu-latest
+    container:
+      image: node:16-bullseye
+    needs:
+      - build_linux-x64-glibc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x64-glibc
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
+
+  test_linux-x64-musl:
+    runs-on: ubuntu-latest
+    container:
+      image: node:16-alpine
+    needs:
+      - build_linux-x64-musl
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x64-musl
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
+
+  test_win-x64:
+    runs-on: windows-2022
+    needs:
+      - build_win-x64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: win32-x64
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
+
+  test_darwin-x64:
+    runs-on: macos-latest
+    needs:
+      - build_darwin-x64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: darwin-x64
+          path: native
+      - name: npm i
+        run: npm i
+      - name: Build js
+        run: npm run build:ts
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
 
   npm-package:
     runs-on: ubuntu-latest

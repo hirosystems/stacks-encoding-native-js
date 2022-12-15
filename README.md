@@ -1,8 +1,7 @@
 # stacks-encoding-native-js
 
 [![npm version](https://badge.fury.io/js/stacks-encoding-native-js.svg)](https://www.npmjs.com/package/stacks-encoding-native-js)
-[![test](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/test.yml/badge.svg)](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/test.yml)
-[![build](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/build.yml/badge.svg)](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/build.yml)
+[![ci](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/ci.yml/badge.svg)](https://github.com/hirosystems/stacks-encoding-native-js/actions/workflows/ci.yml)
 
 `stacks-encoding-native-js` is a Node.js [native addon](https://nodejs.org/api/addons.html) library written in Rust, which provides functions for decoding binary/wire formats used in the Stacks blockchain. Features include Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, and more. 
 
