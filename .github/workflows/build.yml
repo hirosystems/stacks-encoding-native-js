@@ -203,6 +203,29 @@ jobs:
           path: native/darwin-arm64.node
           if-no-files-found: error
 
+  test_linux-x64-glibc:
+    runs-on: ubuntu-latest
+    container:
+      image: node:16-bullseye
+    needs:
+      - build_linux-x64-glibc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x64-glibc
+          path: native
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: native
+      - name: npm i
+        run: npm i
+      - name: Test js
+        run: npm run test:js
+      - name: Test examples
+        working-directory: examples
+        run: npm i && npm test
+
   npm-package:
     runs-on: ubuntu-latest
     needs:
