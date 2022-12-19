@@ -33,7 +33,8 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "@types/node": "^16.11.26"
+    "@types/node": "^16.11.26",
+    "detect-libc": "^2.0.1"
   },
   "files": [
     "README.md",
