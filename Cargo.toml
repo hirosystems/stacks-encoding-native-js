@@ -8,11 +8,14 @@ resolver = "2"
 
 [profile.release]
 lto = true
-incremental = true
+strip = true
+codegen-units = 1
+opt-level = "z"
 
 [profile.release-dev]
 inherits = "release"
 debug = true
+incremental = true
 
 [lib]
 crate-type = ["lib", "cdylib"]
