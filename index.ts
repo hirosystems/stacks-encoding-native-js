@@ -21,7 +21,7 @@ export interface DecodedTxResult {
     post_conditions: TxPostCondition[];
     /** Hex string */
     post_conditions_buffer: string;
-    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase | TxPayloadCoinbaseToAltRecipient | TxPayloadVersionedSmartContract;
+    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase | TxPayloadCoinbaseToAltRecipient | TxPayloadVersionedSmartContract | TxPayloadTenureChange;
 }
 
 export enum PostConditionAssetInfoID {
@@ -195,6 +195,31 @@ export interface TxPayloadVersionedSmartContract {
     code_body: string;
 }
 
+export interface TxPayloadTenureChange {
+  type_id: TxPayloadTypeID.TenureChange;
+  /** (Hex string) Stacks Block hash */
+  previous_tenure_end: string;
+  /** The number of blocks produced in the previous tenure */
+  previous_tenure_blocks: number;
+  /** Cause of change in mining tenure. Depending on cause, tenure can be ended or extended. */
+  cause: TenureChangeCause;
+  /** (Hex string) The ECDSA public key hash of the current tenure */
+  pubkey_hash: string;
+  /** (Hex string) A Schnorr signature from at least 70% of the Stackers */
+  signature: string;
+  /** (Hex string) A bitmap of which Stackers signed */
+  signers: string;
+}
+
+export enum TenureChangeCause {
+  /** A valid winning block-commit */
+  BlockFound = 0,
+  /** No winning block-commits */
+  NoBlockFound = 1,
+  /** A "null miner" won the block-commit */
+  NullMiner = 2,
+}
+
 export enum TxPayloadTypeID {
     TokenTransfer = 0,
     SmartContract = 1,
@@ -203,6 +228,7 @@ export enum TxPayloadTypeID {
     Coinbase = 4,
     CoinbaseToAltRecipient = 5,
     VersionedSmartContract = 6,
+    TenureChange = 7,
 }
 
 export enum PostConditionAuthFlag {
