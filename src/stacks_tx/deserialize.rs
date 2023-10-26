@@ -378,12 +378,17 @@ impl TransactionPayload {
             }
             x if x == TransactionPayloadID::VersionedSmartContract as u8 => {
                 let clarity_version_u8 = fd.read_u8()?;
-                let clarity_version = ClarityVersion::from_u8(clarity_version_u8).ok_or(format!(
-                    "Failed to parse smart contract Clarity version: unknown value {}",
-                    clarity_version_u8
-                ))?;
+                let clarity_version =
+                    ClarityVersion::from_u8(clarity_version_u8).ok_or(format!(
+                        "Failed to parse smart contract Clarity version: unknown value {}",
+                        clarity_version_u8
+                    ))?;
                 let payload = TransactionSmartContract::deserialize(fd)?;
                 TransactionPayload::VersionedSmartContract(payload, clarity_version)
+            }
+            x if x == TransactionPayloadID::TenureChange as u8 => {
+                let payload = TransactionTenureChange::deserialize(fd)?;
+                TransactionPayload::TenureChange(payload)
             }
             _ => {
                 return Err(format!(
@@ -425,6 +430,40 @@ impl TransactionSmartContract {
         let name = ClarityName::deserialize(fd)?;
         let code_body = StacksString::deserialize(fd)?;
         Ok(TransactionSmartContract { name, code_body })
+    }
+}
+
+impl TransactionTenureChange {
+    pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+        let mut previous_tenure_end = [0u8; 32];
+        fd.read_exact(&mut previous_tenure_end)?;
+
+        let previous_tenure_blocks = fd.read_u16::<BigEndian>()?;
+
+        let cause_u8: u8 = fd.read_u8()?;
+        let cause = TenureChangeCause::from_u8(cause_u8).ok_or(format!(
+            "Failed to parse transaction: invalid tenure change cause {}",
+            cause_u8
+        ))?;
+
+        let mut pubkey_hash = [0u8; 20];
+        fd.read_exact(&mut pubkey_hash)?;
+
+        let mut signature = [0u8; 65];
+        fd.read_exact(&mut signature)?;
+
+        let signers_len: u32 = fd.read_u32::<BigEndian>()?;
+        let mut signers: Vec<u8> = vec![0u8; signers_len as usize];
+        fd.read_exact(&mut signers)?;
+
+        Ok(TransactionTenureChange {
+            previous_tenure_end,
+            previous_tenure_blocks,
+            cause,
+            pubkey_hash,
+            signature,
+            signers,
+        })
     }
 }
 
@@ -622,6 +661,7 @@ pub enum TransactionPayloadID {
     Coinbase = 4,
     CoinbaseToAltRecipient = 5,
     VersionedSmartContract = 6,
+    TenureChange = 7,
 }
 
 pub enum TransactionPayload {
@@ -631,10 +671,41 @@ pub enum TransactionPayload {
     PoisonMicroblock(StacksMicroblockHeader, StacksMicroblockHeader),
     Coinbase(CoinbasePayload),
     CoinbaseToAltRecipient(CoinbasePayload, PrincipalData),
-    VersionedSmartContract(TransactionSmartContract, ClarityVersion)
+    VersionedSmartContract(TransactionSmartContract, ClarityVersion),
+    TenureChange(TransactionTenureChange),
 }
 
 pub struct CoinbasePayload(pub [u8; 32]);
+
+pub struct TransactionTenureChange {
+    pub previous_tenure_end: [u8; 32],
+    pub previous_tenure_blocks: u16,
+    pub cause: TenureChangeCause,
+    pub pubkey_hash: [u8; 20],
+    pub signature: [u8; 65],
+    pub signers: Vec<u8>,
+}
+
+#[repr(u8)]
+#[derive(PartialEq, Copy, Clone)]
+pub enum TenureChangeCause {
+    BlockFound = 0,
+    NoBlockFound = 1,
+    NullMiner = 2,
+}
+
+impl TenureChangeCause {
+    pub fn from_u8(n: u8) -> Option<TenureChangeCause> {
+        match n {
+            x if x == TenureChangeCause::BlockFound as u8 => Some(TenureChangeCause::BlockFound),
+            x if x == TenureChangeCause::NoBlockFound as u8 => {
+                Some(TenureChangeCause::NoBlockFound)
+            }
+            x if x == TenureChangeCause::NullMiner as u8 => Some(TenureChangeCause::NullMiner),
+            _ => None,
+        }
+    }
+}
 
 pub struct TransactionSmartContract {
     pub name: ClarityName,
