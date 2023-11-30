@@ -10,39 +10,39 @@ import {
 } from '../index.js';
 
 test('stacks3.0 - decode tx - tenure change', () => {
-  const tenureChangeTx = '00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f2303010000000007c15258750a06e6ddae0320f978e5d86973933f1803d5bbd35213b54e75d2310f006402e97fca6444b0dc98f6f9a1013c5554975c7ce1c7954135949e6af4b9c56ed9cbf1a61dc83d054fa9cc699c9918af44a9b9ab2e5ccaf9611b86e963f139c49a6c546a8e94d67bb21cda0aa3b05364960e91d4281e7000000015124b91930cea290260f27dd56093f0dbefc4e6c5fa';
+  const tenureChangeTx = '808000000004000f873150e9790e305b701aa8c7b3bcff9e31a5f9000000000000000000000000000000000001d367da530b92f4984f537f0b903c330eb5158262afa08d67cbbdea6c8e2ecae06008248ac147fc34101d3cc207b1b3e386e0f53732b5548bd5abe1570c2271340302000000000755c9861be5cff984a20ce6d99d4aa65941412889bdc665094136429b84f8c2ee00000001000000000000000000000000000000000000000000000000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000';
   const decoded = decodeTransaction(tenureChangeTx);
   expect(decoded).toEqual({
-    "tx_id": "0xb0686254421a5e6c6554b128469e32c9f7684cc7191a92eab47ef27c43d2c242",
-    "version": TransactionVersion.Mainnet,
-    "chain_id": 1,
+    "tx_id": "0xc00148be5e8edb457d1bd1ae7ae5fdc2b74b64455f714d512e717deddeedf069",
+    "version": TransactionVersion.Testnet,
+    "chain_id": 0x80000000,
     "auth": {
       "type_id": PostConditionAuthFlag.Standard,
       "origin_condition": {
         "hash_mode": 0,
         "signer": {
-          "address_version": 22,
-          "address_hash_bytes": "0x982f3ec112a5f5928a5c96a914bd733793b896a5",
-          "address": "SP2C2YFP12AJZB4MABJBAJ55XECVS7E4PMMZ89YZR"
+          "address_version": 26,
+          "address_hash_bytes": "0x0f873150e9790e305b701aa8c7b3bcff9e31a5f9",
+          "address": "ST7RECAGX5WGWC2VE0DAHHXKQKZSWCD5Z4JRG6SR"
         },
-        "nonce": "1328",
-        "tx_fee": "553",
+        "nonce": "0",
+        "tx_fee": "0",
         "key_encoding": TxPublicKeyEncoding.Compressed,
-        "signature": "0x00c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f23"
+        "signature": "0x01d367da530b92f4984f537f0b903c330eb5158262afa08d67cbbdea6c8e2ecae06008248ac147fc34101d3cc207b1b3e386e0f53732b5548bd5abe1570c227134"
       }
     },
     "anchor_mode": AnchorModeID.Any,
-    "post_condition_mode": PostConditionModeID.Allow,
+    "post_condition_mode": PostConditionModeID.Deny,
     "post_conditions": [],
-    "post_conditions_buffer": "0x0100000000",
+    "post_conditions_buffer": "0x0200000000",
     "payload": {
       "type_id": TxPayloadTypeID.TenureChange,
-      "previous_tenure_end": "0xc15258750a06e6ddae0320f978e5d86973933f1803d5bbd35213b54e75d2310f",
-      "previous_tenure_blocks": 100,
-      "cause": TenureChangeCause.NullMiner,
-      "pubkey_hash": "0xe97fca6444b0dc98f6f9a1013c5554975c7ce1c7",
-      "signature": "0x954135949e6af4b9c56ed9cbf1a61dc83d054fa9cc699c9918af44a9b9ab2e5ccaf9611b86e963f139c49a6c546a8e94d67bb21cda0aa3b05364960e91d4281e70",
-      "signers": "0x124b91930cea290260f27dd56093f0dbefc4e6c5fa"
+      "previous_tenure_end": "0x55c9861be5cff984a20ce6d99d4aa65941412889bdc665094136429b84f8c2ee",
+      "previous_tenure_blocks": 0,
+      "cause": TenureChangeCause.BlockFound,
+      "pubkey_hash": "0x0100000000000000000000000000000000000000",
+      "signature": "0x0000000000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000",
+      "signers": "0x"
     }
   });
 });

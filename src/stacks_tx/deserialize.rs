@@ -438,7 +438,7 @@ impl TransactionTenureChange {
         let mut previous_tenure_end = [0u8; 32];
         fd.read_exact(&mut previous_tenure_end)?;
 
-        let previous_tenure_blocks = fd.read_u16::<BigEndian>()?;
+        let previous_tenure_blocks = fd.read_u32::<BigEndian>()?;
 
         let cause_u8: u8 = fd.read_u8()?;
         let cause = TenureChangeCause::from_u8(cause_u8).ok_or(format!(
@@ -449,20 +449,21 @@ impl TransactionTenureChange {
         let mut pubkey_hash = [0u8; 20];
         fd.read_exact(&mut pubkey_hash)?;
 
-        let mut signature = [0u8; 65];
-        fd.read_exact(&mut signature)?;
-
         let signers_len: u32 = fd.read_u32::<BigEndian>()?;
         let mut signers: Vec<u8> = vec![0u8; signers_len as usize];
         fd.read_exact(&mut signers)?;
+
+        // ThresholdSignature { R: [0u8; 33], z: [0u8; 32] }
+        let mut signature = [0u8; 65];
+        fd.read_exact(&mut signature)?;
 
         Ok(TransactionTenureChange {
             previous_tenure_end,
             previous_tenure_blocks,
             cause,
             pubkey_hash,
-            signature,
             signers,
+            signature,
         })
     }
 }
@@ -679,11 +680,11 @@ pub struct CoinbasePayload(pub [u8; 32]);
 
 pub struct TransactionTenureChange {
     pub previous_tenure_end: [u8; 32],
-    pub previous_tenure_blocks: u16,
+    pub previous_tenure_blocks: u32,
     pub cause: TenureChangeCause,
     pub pubkey_hash: [u8; 20],
-    pub signature: [u8; 65],
     pub signers: Vec<u8>,
+    pub signature: [u8; 65],
 }
 
 #[repr(u8)]
