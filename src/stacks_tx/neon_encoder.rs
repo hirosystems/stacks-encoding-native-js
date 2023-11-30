@@ -19,7 +19,7 @@ use super::deserialize::{
     StacksTransaction, StandardPrincipalData, TransactionAuth, TransactionAuthField,
     TransactionAuthFieldID, TransactionAuthFlags, TransactionContractCall, TransactionPayload,
     TransactionPayloadID, TransactionPublicKeyEncoding, TransactionSmartContract,
-    TransactionSpendingCondition, TransactionVersion,
+    TransactionSpendingCondition, TransactionTenureChange, TransactionVersion,
 };
 
 struct TxSerializationContext {
@@ -516,6 +516,12 @@ impl NeonJsSerialize for TransactionPayload {
 
                 smart_contract.neon_js_serialize(cx, obj, extra_ctx)?;
             }
+            TransactionPayload::TenureChange(ref tenure_change) => {
+                let type_id = cx.number(TransactionPayloadID::TenureChange as u8);
+                obj.set(cx, "type_id", type_id)?;
+
+                tenure_change.neon_js_serialize(cx, obj, extra_ctx)?;
+            }
         }
         Ok(())
     }
@@ -625,6 +631,35 @@ impl NeonJsSerialize for TransactionSmartContract {
 
         let code_body = cx.string(String::from_utf8_lossy(&self.code_body.0));
         obj.set(cx, "code_body", code_body)?;
+        Ok(())
+    }
+}
+
+impl NeonJsSerialize for TransactionTenureChange {
+    fn neon_js_serialize(
+        &self,
+        cx: &mut FunctionContext,
+        obj: &Handle<JsObject>,
+        _extra_ctx: &(),
+    ) -> NeonResult<()> {
+        let previous_tenure_end = cx.string(encode_hex(&self.previous_tenure_end));
+        obj.set(cx, "previous_tenure_end", previous_tenure_end)?;
+
+        let previous_tenure_blocks = cx.number(self.previous_tenure_blocks);
+        obj.set(cx, "previous_tenure_blocks", previous_tenure_blocks)?;
+
+        let cause = cx.number(self.cause as u8);
+        obj.set(cx, "cause", cause)?;
+
+        let pubkey_hash = cx.string(encode_hex(&self.pubkey_hash));
+        obj.set(cx, "pubkey_hash", pubkey_hash)?;
+
+        let signature = cx.string(encode_hex(&self.signature));
+        obj.set(cx, "signature", signature)?;
+
+        let signers = cx.string(encode_hex(&self.signers));
+        obj.set(cx, "signers", signers)?;
+
         Ok(())
     }
 }
