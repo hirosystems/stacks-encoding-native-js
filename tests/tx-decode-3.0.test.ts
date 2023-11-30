@@ -38,10 +38,10 @@ test('stacks3.0 - decode tx - tenure change', () => {
     "payload": {
       "type_id": TxPayloadTypeID.TenureChange,
       "previous_tenure_end": "0x55c9861be5cff984a20ce6d99d4aa65941412889bdc665094136429b84f8c2ee",
-      "previous_tenure_blocks": 0,
+      "previous_tenure_blocks": 1,
       "cause": TenureChangeCause.BlockFound,
-      "pubkey_hash": "0x0100000000000000000000000000000000000000",
-      "signature": "0x0000000000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000",
+      "pubkey_hash": "0x0000000000000000000000000000000000000000",
+      "signature": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000",
       "signers": "0x"
     }
   });
