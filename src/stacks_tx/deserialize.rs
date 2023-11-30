@@ -798,8 +798,10 @@ mod tests {
         let input = b"80800000000400ad0cc5ca0b4571dd435a9da7e16cbc662716dceb00000000000000010000000000000000000015833671ecd7432e6412423273eebf8a78d973beb08f690e58ba548f67ee26584967a5bc24d44f27ecca18e82a9956181e9d9cef7c67f718b33c5f5d0f82643801020000000008010101010101010101010101010101010101010101010101010101010101010109000000506f77e9a15503066b515060aa438ae3f5bc5207339b8e2933bdeae0891362d8e7ca2e5b047153904272d5f030ddcc83333676df6583394b0852a7e411b7c8d4c973f17fb7687601891ad7ca6707aa8408";
 
         let bytes = decode_hex(input).unwrap();
+        let bytes_len = bytes.len();
         let mut cursor = Cursor::new(bytes.as_ref());
         let tx = StacksTransaction::deserialize(&mut cursor);
         assert!(tx.is_ok());
+        assert_eq!(cursor.position() as usize, bytes_len);
     }
 }
