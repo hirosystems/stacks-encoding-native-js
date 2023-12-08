@@ -21,7 +21,16 @@ export interface DecodedTxResult {
     post_conditions: TxPostCondition[];
     /** Hex string */
     post_conditions_buffer: string;
-    payload: TxPayloadTokenTransfer | TxPayloadSmartContract | TxPayloadContractCall | TxPayloadPoisonMicroblock | TxPayloadCoinbase | TxPayloadCoinbaseToAltRecipient | TxPayloadVersionedSmartContract | TxPayloadTenureChange;
+    payload: 
+      | TxPayloadTokenTransfer
+      | TxPayloadSmartContract
+      | TxPayloadContractCall
+      | TxPayloadPoisonMicroblock
+      | TxPayloadCoinbase
+      | TxPayloadCoinbaseToAltRecipient
+      | TxPayloadVersionedSmartContract
+      | TxPayloadTenureChange
+      | TxPayloadNakamotoCoinbase;
 }
 
 export enum PostConditionAssetInfoID {
@@ -188,6 +197,16 @@ export interface TxPayloadCoinbaseToAltRecipient {
     recipient: PrincipalStandardData | PrincipalContractData;
 }
 
+export interface TxPayloadNakamotoCoinbase {
+  type_id: TxPayloadTypeID.NakamotoCoinbase;
+  /** Hex string */
+  payload_buffer: string;
+  /** Optional, null if not specified */
+  recipient: PrincipalStandardData | PrincipalContractData | null;
+  /** Hex string */
+  vrf_proof: string;
+}
+
 export interface TxPayloadVersionedSmartContract {
     type_id: TxPayloadTypeID.VersionedSmartContract;
     clarity_version: ClarityVersion;
@@ -229,6 +248,7 @@ export enum TxPayloadTypeID {
     CoinbaseToAltRecipient = 5,
     VersionedSmartContract = 6,
     TenureChange = 7,
+    NakamotoCoinbase = 8,
 }
 
 export enum PostConditionAuthFlag {

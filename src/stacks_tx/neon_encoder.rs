@@ -522,6 +522,25 @@ impl NeonJsSerialize for TransactionPayload {
 
                 tenure_change.neon_js_serialize(cx, obj, extra_ctx)?;
             }
+            TransactionPayload::NakamotoCoinbase(ref buf, ref principal, ref vrf_proof) => {
+                let type_id = cx.number(TransactionPayloadID::NakamotoCoinbase as u8);
+                obj.set(cx, "type_id", type_id)?;
+
+                let payload_buffer = cx.string(encode_hex(&buf.0));
+                obj.set(cx, "payload_buffer", payload_buffer)?;
+
+                if let Some(principal) = principal {
+                    let recipient_obj = cx.empty_object();
+                    principal.neon_js_serialize(cx, &recipient_obj, extra_ctx)?;
+                    obj.set(cx, "recipient", recipient_obj)?;
+                } else {
+                    let recipient_obj = cx.null();
+                    obj.set(cx, "recipient", recipient_obj)?;
+                }
+
+                let vrf_proof_buffer = cx.string(encode_hex(&vrf_proof.0));
+                obj.set(cx, "vrf_proof", vrf_proof_buffer)?;
+            }
         }
         Ok(())
     }

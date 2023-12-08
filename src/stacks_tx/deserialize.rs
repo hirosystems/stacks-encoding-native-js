@@ -390,6 +390,18 @@ impl TransactionPayload {
                 let payload = TransactionTenureChange::deserialize(fd)?;
                 TransactionPayload::TenureChange(payload)
             }
+            x if x == TransactionPayloadID::NakamotoCoinbase as u8 => {
+                let mut payload_bytes = [0u8; 32];
+                fd.read_exact(&mut payload_bytes)?;
+                let payload = CoinbasePayload(payload_bytes);
+
+                let principal = PrincipalData::deserialize_optional(fd)?;
+
+                let mut vrf_proof: Vec<u8> = vec![0u8; 80];
+                fd.read_exact(&mut vrf_proof)?;
+
+                TransactionPayload::NakamotoCoinbase(payload, principal, VRFProof(vrf_proof))
+            }
             _ => {
                 return Err(format!(
                     "Failed to parse transaction -- unknown payload ID {}",
@@ -531,6 +543,21 @@ impl PrincipalData {
             _ => Err("Bad principal prefix".into()),
         }
     }
+
+    pub fn deserialize_optional(fd: &mut Cursor<&[u8]>) -> Result<Option<Self>, DeserializeError> {
+        let mut header = [0];
+        fd.read_exact(&mut header)?;
+        let prefix =
+            TypePrefix::from_u8(header[0]).ok_or_else(|| "Bad optional PrincipalData prefix")?;
+        match prefix {
+            TypePrefix::OptionalNone => Ok(None),
+            TypePrefix::OptionalSome => {
+                let principal_data = PrincipalData::deserialize(fd)?;
+                Ok(Some(principal_data))
+            }
+            _ => Err("Bad optional PrincipalData prefix".into()),
+        }
+    }
 }
 
 impl StandardPrincipalData {
@@ -663,6 +690,7 @@ pub enum TransactionPayloadID {
     CoinbaseToAltRecipient = 5,
     VersionedSmartContract = 6,
     TenureChange = 7,
+    NakamotoCoinbase = 8,
 }
 
 pub enum TransactionPayload {
@@ -674,9 +702,12 @@ pub enum TransactionPayload {
     CoinbaseToAltRecipient(CoinbasePayload, PrincipalData),
     VersionedSmartContract(TransactionSmartContract, ClarityVersion),
     TenureChange(TransactionTenureChange),
+    NakamotoCoinbase(CoinbasePayload, Option<PrincipalData>, VRFProof),
 }
 
 pub struct CoinbasePayload(pub [u8; 32]);
+
+pub struct VRFProof(pub Vec<u8>);
 
 pub struct TransactionTenureChange {
     pub previous_tenure_end: [u8; 32],
@@ -756,10 +787,20 @@ mod tests {
 
     #[test]
     fn test_decode_bug() {
-        let input = b"0x00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f230301000000000216982f3ec112a5f5928a5c96a914bd733793b896a51861726b6164696b6f2d676f7665726e616e63652d76332d310770726f706f7365000000060616982f3ec112a5f5928a5c96a914bd733793b896a51d61726b6164696b6f2d7374616b652d706f6f6c2d64696b6f2d76312d32010000000000000000000000000000ef8801000000000000000000000000000003f00e00000028414950313020557064617465204c54567320616e64204c69717569646174696f6e20526174696f730e0000003168747470733a2f2f6769746875622e636f6d2f61726b6164696b6f2d64616f2f61726b6164696b6f2f70756c6c2f3439330b000000010c0000000507616464726573730516982f3ec112a5f5928a5c96a914bd733793b896a50863616e2d6275726e040863616e2d6d696e7404046e616d650d0000002b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f0e7175616c69666965642d6e616d650616982f3ec112a5f5928a5c96a914bd733793b896a52b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f";
+        // 07c15258750a06e6ddae0320f978e5d86973933f1803d5bbd35213b54e75d2310f006402e97fca6444b0dc98f6f9a1013c5554975c7ce1c7954135949e6af4b9c56ed9cbf1a61dc83d054fa9cc699c9918af44a9b9ab2e5ccaf9611b86e963f139c49a6c546a8e94d67bb21cda0aa3b05364960e91d4281e7000000015124b91930cea290260f27dd56093f0dbefc4e6c5fa
+        // pre-payload byte length: 115
+        // let input = b"0x00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f230301000000000216982f3ec112a5f5928a5c96a914bd733793b896a51861726b6164696b6f2d676f7665726e616e63652d76332d310770726f706f7365000000060616982f3ec112a5f5928a5c96a914bd733793b896a51d61726b6164696b6f2d7374616b652d706f6f6c2d64696b6f2d76312d32010000000000000000000000000000ef8801000000000000000000000000000003f00e00000028414950313020557064617465204c54567320616e64204c69717569646174696f6e20526174696f730e0000003168747470733a2f2f6769746875622e636f6d2f61726b6164696b6f2d64616f2f61726b6164696b6f2f70756c6c2f3439330b000000010c0000000507616464726573730516982f3ec112a5f5928a5c96a914bd733793b896a50863616e2d6275726e040863616e2d6d696e7404046e616d650d0000002b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f0e7175616c69666965642d6e616d650616982f3ec112a5f5928a5c96a914bd733793b896a52b61697031302d61726b6164696b6f2d7570646174652d74766c2d6c69717569646174696f6e2d726174696f";
+
+        // tx prefix (before payload):
+        // let input = b"00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f23030100000000";
+
+        let input = b"80800000000400b40723ab4d7781cf1b45083aa043ce4563006c6100000000000000010000000000000000000158be820619a4838f74e63099bb113fcf7ee13ef3b2bb56728cd19470f9379f05288d4accc987d8dd85de5101776c2ad000784d118e35deb4f02852540bf6dd5f01020000000008010101010101010101010101010101010101010101010101010101010101010109119054d8cfba5f6aebaac75b0f6671a6917211729fa7bafa35ab0ad68fe243cf4169eb339d8a26ee8e036c8380e3afd63da8aca1f9673d19a59ef00bf13e1ba2e540257d0b471fc591a877a90e04e00b";
+
         let bytes = decode_hex(input).unwrap();
+        let bytes_len = bytes.len();
         let mut cursor = Cursor::new(bytes.as_ref());
         let tx = StacksTransaction::deserialize(&mut cursor);
         assert!(tx.is_ok());
+        assert_eq!(cursor.position() as usize, bytes_len);
     }
 }
