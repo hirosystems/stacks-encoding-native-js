@@ -49,10 +49,10 @@ test('stacks3.0 - decode tx - tenure change', () => {
 });
 
 test('stacks3.0 - decode tx - nakamoto coinbase - no alt recipient', () => {
-  const tenureChangeTx = '80800000000400ad0cc5ca0b4571dd435a9da7e16cbc662716dceb00000000000000010000000000000000000015833671ecd7432e6412423273eebf8a78d973beb08f690e58ba548f67ee26584967a5bc24d44f27ecca18e82a9956181e9d9cef7c67f718b33c5f5d0f82643801020000000008010101010101010101010101010101010101010101010101010101010101010109000000506f77e9a15503066b515060aa438ae3f5bc5207339b8e2933bdeae0891362d8e7ca2e5b047153904272d5f030ddcc83333676df6583394b0852a7e411b7c8d4c973f17fb7687601891ad7ca6707aa8408';
+  const tenureChangeTx = '80800000000400b40723ab4d7781cf1b45083aa043ce4563006c6100000000000000010000000000000000000158be820619a4838f74e63099bb113fcf7ee13ef3b2bb56728cd19470f9379f05288d4accc987d8dd85de5101776c2ad000784d118e35deb4f02852540bf6dd5f01020000000008010101010101010101010101010101010101010101010101010101010101010109119054d8cfba5f6aebaac75b0f6671a6917211729fa7bafa35ab0ad68fe243cf4169eb339d8a26ee8e036c8380e3afd63da8aca1f9673d19a59ef00bf13e1ba2e540257d0b471fc591a877a90e04e00b';
   const decoded = decodeTransaction(tenureChangeTx);
   expect(decoded).toEqual({
-    "tx_id": "0xa18614990f3a67b8ab13ec95846aebd409b2ef85017c900840436ac547a537aa",
+    "tx_id": "0x1ecc33bfdd58a94ff97afb6d64a2ebefb0021f22490767e844ebd80285486e16",
     "version": TransactionVersion.Testnet,
     "chain_id": 0x80000000,
     "auth": {
@@ -61,13 +61,13 @@ test('stacks3.0 - decode tx - nakamoto coinbase - no alt recipient', () => {
         "hash_mode": 0,
         "signer": {
           "address_version": 26,
-          "address_hash_bytes": "0xad0cc5ca0b4571dd435a9da7e16cbc662716dceb",
-          "address": "ST2PGSHEA1D2Q3QA3BAETFRBCQHK2E5PWXECD5E7T"
+          "address_hash_bytes": "0xb40723ab4d7781cf1b45083aa043ce4563006c61",
+          "address": "ST2T0E8XB9NVR3KRV8M43N823SS2P603CC4Y4DG1V"
         },
         "nonce": "1",
         "tx_fee": "0",
         "key_encoding": TxPublicKeyEncoding.Compressed,
-        "signature": "0x0015833671ecd7432e6412423273eebf8a78d973beb08f690e58ba548f67ee26584967a5bc24d44f27ecca18e82a9956181e9d9cef7c67f718b33c5f5d0f826438"
+        "signature": "0x0158be820619a4838f74e63099bb113fcf7ee13ef3b2bb56728cd19470f9379f05288d4accc987d8dd85de5101776c2ad000784d118e35deb4f02852540bf6dd5f"
       }
     },
     "anchor_mode": AnchorModeID.OnChainOnly,
@@ -78,7 +78,7 @@ test('stacks3.0 - decode tx - nakamoto coinbase - no alt recipient', () => {
       "type_id": TxPayloadTypeID.NakamotoCoinbase,
       "payload_buffer": "0x0101010101010101010101010101010101010101010101010101010101010101",
       "recipient": null,
-      "vrf_proof": "0x6f77e9a15503066b515060aa438ae3f5bc5207339b8e2933bdeae0891362d8e7ca2e5b047153904272d5f030ddcc83333676df6583394b0852a7e411b7c8d4c973f17fb7687601891ad7ca6707aa8408"
+      "vrf_proof": "0x119054d8cfba5f6aebaac75b0f6671a6917211729fa7bafa35ab0ad68fe243cf4169eb339d8a26ee8e036c8380e3afd63da8aca1f9673d19a59ef00bf13e1ba2e540257d0b471fc591a877a90e04e00b"
     }
   });
 
