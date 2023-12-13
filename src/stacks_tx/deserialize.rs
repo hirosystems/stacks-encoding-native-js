@@ -447,6 +447,15 @@ impl TransactionSmartContract {
 
 impl TransactionTenureChange {
     pub fn deserialize(fd: &mut Cursor<&[u8]>) -> Result<Self, DeserializeError> {
+        let mut tenure_consensus_hash = [0u8; 20];
+        fd.read_exact(&mut tenure_consensus_hash)?;
+
+        let mut prev_tenure_consensus_hash = [0u8; 20];
+        fd.read_exact(&mut prev_tenure_consensus_hash)?;
+
+        let mut burn_view_consensus_hash = [0u8; 20];
+        fd.read_exact(&mut burn_view_consensus_hash)?;
+
         let mut previous_tenure_end = [0u8; 32];
         fd.read_exact(&mut previous_tenure_end)?;
 
@@ -461,21 +470,24 @@ impl TransactionTenureChange {
         let mut pubkey_hash = [0u8; 20];
         fd.read_exact(&mut pubkey_hash)?;
 
-        let signers_len: u32 = fd.read_u32::<BigEndian>()?;
-        let mut signers: Vec<u8> = vec![0u8; signers_len as usize];
-        fd.read_exact(&mut signers)?;
-
         // ThresholdSignature { R: [0u8; 33], z: [0u8; 32] }
         let mut signature = [0u8; 65];
         fd.read_exact(&mut signature)?;
 
+        let signers_len: u32 = fd.read_u32::<BigEndian>()?;
+        let mut signers: Vec<u8> = vec![0u8; signers_len as usize];
+        fd.read_exact(&mut signers)?;
+
         Ok(TransactionTenureChange {
+            tenure_consensus_hash,
+            prev_tenure_consensus_hash,
+            burn_view_consensus_hash,
             previous_tenure_end,
             previous_tenure_blocks,
             cause,
             pubkey_hash,
-            signers,
             signature,
+            signers,
         })
     }
 }
@@ -710,30 +722,31 @@ pub struct CoinbasePayload(pub [u8; 32]);
 pub struct VRFProof(pub Vec<u8>);
 
 pub struct TransactionTenureChange {
+    pub tenure_consensus_hash: [u8; 20],
+    pub prev_tenure_consensus_hash: [u8; 20],
+    pub burn_view_consensus_hash: [u8; 20],
     pub previous_tenure_end: [u8; 32],
     pub previous_tenure_blocks: u32,
     pub cause: TenureChangeCause,
     pub pubkey_hash: [u8; 20],
-    pub signers: Vec<u8>,
     pub signature: [u8; 65],
+    pub signers: Vec<u8>,
 }
 
 #[repr(u8)]
 #[derive(PartialEq, Copy, Clone)]
 pub enum TenureChangeCause {
+    /// A valid winning block-commit
     BlockFound = 0,
-    NoBlockFound = 1,
-    NullMiner = 2,
+    /// The next burnchain block is taking too long, so extend the runtime budget
+    Extended = 1,
 }
 
 impl TenureChangeCause {
     pub fn from_u8(n: u8) -> Option<TenureChangeCause> {
         match n {
             x if x == TenureChangeCause::BlockFound as u8 => Some(TenureChangeCause::BlockFound),
-            x if x == TenureChangeCause::NoBlockFound as u8 => {
-                Some(TenureChangeCause::NoBlockFound)
-            }
-            x if x == TenureChangeCause::NullMiner as u8 => Some(TenureChangeCause::NullMiner),
+            x if x == TenureChangeCause::Extended as u8 => Some(TenureChangeCause::Extended),
             _ => None,
         }
     }
@@ -794,7 +807,7 @@ mod tests {
         // tx prefix (before payload):
         // let input = b"00000000010400982f3ec112a5f5928a5c96a914bd733793b896a5000000000000053000000000000002290000c85889dad0d5b08a997a93a28a7c93eb22c324e5f8992dc93e37865ef4f3e0d65383beefeffc4871a2facbc4b590ddf887c80de6638ed4e2ec0e633d1e130f23030100000000";
 
-        let input = b"80800000000400b40723ab4d7781cf1b45083aa043ce4563006c6100000000000000010000000000000000000158be820619a4838f74e63099bb113fcf7ee13ef3b2bb56728cd19470f9379f05288d4accc987d8dd85de5101776c2ad000784d118e35deb4f02852540bf6dd5f01020000000008010101010101010101010101010101010101010101010101010101010101010109119054d8cfba5f6aebaac75b0f6671a6917211729fa7bafa35ab0ad68fe243cf4169eb339d8a26ee8e036c8380e3afd63da8aca1f9673d19a59ef00bf13e1ba2e540257d0b471fc591a877a90e04e00b";
+        let input = b"808000000004001dc27eba0247f8cc9575e7d45e50a0bc7e72427d000000000000001d000000000000000000011dc72b6dfd9b36e414a2709e3b01eb5bbdd158f9bc77cd2ca6c3c8b0c803613e2189f6dacf709b34e8182e99d3a1af15812b75e59357d9c255c772695998665f010200000000076f2ff2c4517ab683bf2d588727f09603cc3e9328b9c500e21a939ead57c0560af8a3a132bd7d56566f2ff2c4517ab683bf2d588727f09603cc3e932828dcefb98f6b221eef731cabec7538314441c1e0ff06b44c22085d41aae447c1000000010014ff3cb19986645fd7e71282ad9fea07d540a60e0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000000000000000000000000000000000000000000000000000";
 
         let bytes = decode_hex(input).unwrap();
         let bytes_len = bytes.len();

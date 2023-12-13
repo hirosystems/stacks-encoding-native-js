@@ -12,10 +12,10 @@ import {
 } from '../index.js';
 
 test('stacks3.0 - decode tx - tenure change', () => {
-  const tenureChangeTx = '808000000004000f873150e9790e305b701aa8c7b3bcff9e31a5f9000000000000000000000000000000000001d367da530b92f4984f537f0b903c330eb5158262afa08d67cbbdea6c8e2ecae06008248ac147fc34101d3cc207b1b3e386e0f53732b5548bd5abe1570c2271340302000000000755c9861be5cff984a20ce6d99d4aa65941412889bdc665094136429b84f8c2ee00000001000000000000000000000000000000000000000000000000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000';
+  const tenureChangeTx = '808000000004001dc27eba0247f8cc9575e7d45e50a0bc7e72427d000000000000001d000000000000000000011dc72b6dfd9b36e414a2709e3b01eb5bbdd158f9bc77cd2ca6c3c8b0c803613e2189f6dacf709b34e8182e99d3a1af15812b75e59357d9c255c772695998665f010200000000076f2ff2c4517ab683bf2d588727f09603cc3e9328b9c500e21a939ead57c0560af8a3a132bd7d56566f2ff2c4517ab683bf2d588727f09603cc3e932828dcefb98f6b221eef731cabec7538314441c1e0ff06b44c22085d41aae447c1000000010014ff3cb19986645fd7e71282ad9fea07d540a60e0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798000000000000000000000000000000000000000000000000000000000000000000000000';
   const decoded = decodeTransaction(tenureChangeTx);
   expect(decoded).toEqual({
-    "tx_id": "0xc00148be5e8edb457d1bd1ae7ae5fdc2b74b64455f714d512e717deddeedf069",
+    "tx_id": "0xc8d48b288a780bc98602c1ed137f80d8bf4a6c60fb50cc569bee33ee7563501b",
     "version": TransactionVersion.Testnet,
     "chain_id": 0x80000000,
     "auth": {
@@ -24,25 +24,28 @@ test('stacks3.0 - decode tx - tenure change', () => {
         "hash_mode": 0,
         "signer": {
           "address_version": 26,
-          "address_hash_bytes": "0x0f873150e9790e305b701aa8c7b3bcff9e31a5f9",
-          "address": "ST7RECAGX5WGWC2VE0DAHHXKQKZSWCD5Z4JRG6SR"
+          "address_hash_bytes": "0x1dc27eba0247f8cc9575e7d45e50a0bc7e72427d",
+          "address": "STEW4ZNT093ZHK4NEQKX8QJGM2Y7WWJ2FQQS5C19"
         },
-        "nonce": "0",
+        "nonce": "29",
         "tx_fee": "0",
         "key_encoding": TxPublicKeyEncoding.Compressed,
-        "signature": "0x01d367da530b92f4984f537f0b903c330eb5158262afa08d67cbbdea6c8e2ecae06008248ac147fc34101d3cc207b1b3e386e0f53732b5548bd5abe1570c227134"
+        "signature": "0x011dc72b6dfd9b36e414a2709e3b01eb5bbdd158f9bc77cd2ca6c3c8b0c803613e2189f6dacf709b34e8182e99d3a1af15812b75e59357d9c255c772695998665f"
       }
     },
-    "anchor_mode": AnchorModeID.Any,
+    "anchor_mode": AnchorModeID.OnChainOnly,
     "post_condition_mode": PostConditionModeID.Deny,
     "post_conditions": [],
     "post_conditions_buffer": "0x0200000000",
     "payload": {
       "type_id": TxPayloadTypeID.TenureChange,
-      "previous_tenure_end": "0x55c9861be5cff984a20ce6d99d4aa65941412889bdc665094136429b84f8c2ee",
+      "tenure_consensus_hash": "0x6f2ff2c4517ab683bf2d588727f09603cc3e9328",
+      "prev_tenure_consensus_hash": "0xb9c500e21a939ead57c0560af8a3a132bd7d5656",
+      "burn_view_consensus_hash": "0x6f2ff2c4517ab683bf2d588727f09603cc3e9328",
+      "previous_tenure_end": "0x28dcefb98f6b221eef731cabec7538314441c1e0ff06b44c22085d41aae447c1",
       "previous_tenure_blocks": 1,
       "cause": TenureChangeCause.BlockFound,
-      "pubkey_hash": "0x0000000000000000000000000000000000000000",
+      "pubkey_hash": "0x14ff3cb19986645fd7e71282ad9fea07d540a60e",
       "signature": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000",
       "signers": "0x"
     }
