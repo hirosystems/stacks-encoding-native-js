@@ -216,9 +216,18 @@ export interface TxPayloadVersionedSmartContract {
 
 export interface TxPayloadTenureChange {
   type_id: TxPayloadTypeID.TenureChange;
-  /** (Hex string) Stacks Block hash */
+  /** Consensus hash of this tenure.  Corresponds to the sortition in which the miner of this
+   * block was chosen. It may be the case that this miner's tenure gets _extended_ across
+   * subsequent sortitions; if this happens, then this `consensus_hash` value _remains the same_
+   * as the sortition in which the winning block-commit was mined. */
+  tenure_consensus_hash: string;
+  /** Consensus hash of the previous tenure. Corresponds to the sortition of the previous winning block-commit. */
+  prev_tenure_consensus_hash: string;
+  /** Current consensus hash on the underlying burnchain. Corresponds to the last-seen sortition. */
+  burn_view_consensus_hash: string;
+  /** The StacksBlockId of the last block from the previous tenure */
   previous_tenure_end: string;
-  /** The number of blocks produced in the previous tenure */
+  /** The number of blocks produced since the last sortition-linked tenure */
   previous_tenure_blocks: number;
   /** Cause of change in mining tenure. Depending on cause, tenure can be ended or extended. */
   cause: TenureChangeCause;
@@ -233,10 +242,8 @@ export interface TxPayloadTenureChange {
 export enum TenureChangeCause {
   /** A valid winning block-commit */
   BlockFound = 0,
-  /** No winning block-commits */
-  NoBlockFound = 1,
-  /** A "null miner" won the block-commit */
-  NullMiner = 2,
+  /** The next burnchain block is taking too long, so extend the runtime budget */
+  Extended = 1,
 }
 
 export enum TxPayloadTypeID {

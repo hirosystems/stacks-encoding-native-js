@@ -661,6 +661,15 @@ impl NeonJsSerialize for TransactionTenureChange {
         obj: &Handle<JsObject>,
         _extra_ctx: &(),
     ) -> NeonResult<()> {
+        let tenure_consensus_hash = cx.string(encode_hex(&self.tenure_consensus_hash));
+        obj.set(cx, "tenure_consensus_hash", tenure_consensus_hash)?;
+
+        let prev_tenure_consensus_hash = cx.string(encode_hex(&self.prev_tenure_consensus_hash));
+        obj.set(cx, "prev_tenure_consensus_hash", prev_tenure_consensus_hash)?;
+
+        let burn_view_consensus_hash = cx.string(encode_hex(&self.burn_view_consensus_hash));
+        obj.set(cx, "burn_view_consensus_hash", burn_view_consensus_hash)?;
+
         let previous_tenure_end = cx.string(encode_hex(&self.previous_tenure_end));
         obj.set(cx, "previous_tenure_end", previous_tenure_end)?;
 
