@@ -682,12 +682,6 @@ impl NeonJsSerialize for TransactionTenureChange {
         let pubkey_hash = cx.string(encode_hex(&self.pubkey_hash));
         obj.set(cx, "pubkey_hash", pubkey_hash)?;
 
-        let signature = cx.string(encode_hex(&self.signature));
-        obj.set(cx, "signature", signature)?;
-
-        let signers = cx.string(encode_hex(&self.signers));
-        obj.set(cx, "signers", signers)?;
-
         Ok(())
     }
 }

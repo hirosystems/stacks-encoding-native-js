@@ -470,14 +470,6 @@ impl TransactionTenureChange {
         let mut pubkey_hash = [0u8; 20];
         fd.read_exact(&mut pubkey_hash)?;
 
-        // ThresholdSignature { R: [0u8; 33], z: [0u8; 32] }
-        let mut signature = [0u8; 65];
-        fd.read_exact(&mut signature)?;
-
-        let signers_len: u32 = fd.read_u32::<BigEndian>()?;
-        let mut signers: Vec<u8> = vec![0u8; signers_len as usize];
-        fd.read_exact(&mut signers)?;
-
         Ok(TransactionTenureChange {
             tenure_consensus_hash,
             prev_tenure_consensus_hash,
@@ -486,8 +478,6 @@ impl TransactionTenureChange {
             previous_tenure_blocks,
             cause,
             pubkey_hash,
-            signature,
-            signers,
         })
     }
 }
@@ -729,8 +719,6 @@ pub struct TransactionTenureChange {
     pub previous_tenure_blocks: u32,
     pub cause: TenureChangeCause,
     pub pubkey_hash: [u8; 20],
-    pub signature: [u8; 65],
-    pub signers: Vec<u8>,
 }
 
 #[repr(u8)]

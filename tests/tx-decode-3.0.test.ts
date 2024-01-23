@@ -46,8 +46,6 @@ test('stacks3.0 - decode tx - tenure change', () => {
       "previous_tenure_blocks": 1,
       "cause": TenureChangeCause.BlockFound,
       "pubkey_hash": "0x14ff3cb19986645fd7e71282ad9fea07d540a60e",
-      "signature": "0x0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817980000000000000000000000000000000000000000000000000000000000000000",
-      "signers": "0x"
     }
   });
 });
