@@ -233,10 +233,6 @@ export interface TxPayloadTenureChange {
   cause: TenureChangeCause;
   /** (Hex string) The ECDSA public key hash of the current tenure */
   pubkey_hash: string;
-  /** (Hex string) A Schnorr signature from at least 70% of the Stackers */
-  signature: string;
-  /** (Hex string) A bitmap of which Stackers signed */
-  signers: string;
 }
 
 export enum TenureChangeCause {
