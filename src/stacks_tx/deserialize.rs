@@ -308,7 +308,13 @@ impl MultisigHashMode {
     pub fn from_u8(n: u8) -> Option<MultisigHashMode> {
         match n {
             x if x == MultisigHashMode::P2SH as u8 => Some(MultisigHashMode::P2SH),
+            x if x == MultisigHashMode::P2SHNonSequential as u8 => {
+                Some(MultisigHashMode::P2SHNonSequential)
+            }
             x if x == MultisigHashMode::P2WSH as u8 => Some(MultisigHashMode::P2WSH),
+            x if x == MultisigHashMode::P2WSHNonSequential as u8 => {
+                Some(MultisigHashMode::P2WSHNonSequential)
+            }
             _ => None,
         }
     }
@@ -632,7 +638,9 @@ pub struct SinglesigSpendingCondition {
 #[derive(PartialEq, Copy, Clone)]
 pub enum MultisigHashMode {
     P2SH = 0x01,
+    P2SHNonSequential = 0x05,
     P2WSH = 0x03,
+    P2WSHNonSequential = 0x07,
 }
 
 #[repr(u8)]

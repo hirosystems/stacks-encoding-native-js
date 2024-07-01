@@ -280,8 +280,12 @@ export enum TxSpendingConditionSingleSigHashMode {
 export enum TxSpendingConditionMultiSigHashMode {
     /** hash160(multisig-redeem-script), same as bitcoin's multisig p2sh */
     P2SH = 0x01,
+    /** hash160(multisig-redeem-script), same as bitcoin's multisig p2sh (non-sequential signing) */
+    P2SHNonSequential = 0x05,
     /** hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh */
     P2WSH = 0x03,
+    /** hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh (non-sequential signing) */
+    P2WSHNonSequential = 0x07,
 }
 
 export enum ClarityVersion {

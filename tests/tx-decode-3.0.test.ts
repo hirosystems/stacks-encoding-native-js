@@ -6,9 +6,11 @@ import {
   PrincipalTypeID,
   TenureChangeCause,
   TransactionVersion,
+  TxAuthFieldTypeID,
   TxPayloadNakamotoCoinbase,
   TxPayloadTypeID,
-  TxPublicKeyEncoding
+  TxPublicKeyEncoding,
+  TxSpendingConditionMultiSigHashMode
 } from '../index.js';
 
 test('stacks3.0 - decode tx - tenure change', () => {
@@ -174,4 +176,62 @@ test('stacks3.0 - decode tx - nakamoto coinbase - no alt recipient (stacks-core 
   const txType: TxPayloadTypeID.NakamotoCoinbase = payload.type_id;
   expect(txType).toEqual(TxPayloadTypeID.NakamotoCoinbase);
   expect(payload.recipient).not.toBeNull();
+});
+
+test("stacks 3.0 - decode tx - non-sequential multi-sig", () => {
+  const tx =
+    "8080000000040535e2fdeee173024af6848ca6e335691b55498fc4000000000000000000000000000000640000000300028bd9dd96b66534e23cbcce4e69447b92bf1d738edb83182005cfb3b402666e42020158146dc95e76926e3add7289821e983e0dd2f2b0bf464c8e94bb082a213a91067ced1381a64bd03afa662992099b04d4c3f538cc6afa3d043ae081e25ebbde6f0300e30e7e744c6eef7c0a4d1a2dad6f0daa3c7655eb6e9fd6c34d1efa87b648d3e55cdd004ca4e8637cddad3316f3fbd6146665fad2e7ca26725ad09f58c4e43aa0000203020000000000051a70f696e2bda63701e044609eb7a7ce5876571905000000000000271000000000000000000000000000000000000000000000000000000000000000000000";
+  const decoded = decodeTransaction(tx);
+  expect(decoded).toEqual({
+    "tx_id": "0xf7f30ad912e9433743fb614b17842e8a366a04cc882e7fd94ff59fa9c2638674",
+    "version": TransactionVersion.Testnet,
+    "chain_id": 0x80000000,
+    "auth": {
+      "type_id": PostConditionAuthFlag.Standard,
+      "origin_condition": {
+        "tx_fee": "100",
+        "nonce": "0",
+        "fields": [
+          {
+            "type_id": TxAuthFieldTypeID.PublicKeyCompressed,
+            "public_key":
+              "0x028bd9dd96b66534e23cbcce4e69447b92bf1d738edb83182005cfb3b402666e42",
+          },
+          {
+            "type_id": TxAuthFieldTypeID.SignatureCompressed,
+            "signature":
+              "0x0158146dc95e76926e3add7289821e983e0dd2f2b0bf464c8e94bb082a213a91067ced1381a64bd03afa662992099b04d4c3f538cc6afa3d043ae081e25ebbde6f",
+          },
+          {
+            "type_id": TxAuthFieldTypeID.SignatureUncompressed,
+            "signature":
+              "0x00e30e7e744c6eef7c0a4d1a2dad6f0daa3c7655eb6e9fd6c34d1efa87b648d3e55cdd004ca4e8637cddad3316f3fbd6146665fad2e7ca26725ad09f58c4e43aa0",
+          },
+        ],
+        "hash_mode": TxSpendingConditionMultiSigHashMode.P2SHNonSequential,
+        "signatures_required": 2,
+        "signer": {
+          "address": "SNTY5ZFEW5SG4JQPGJ6ADRSND4DNAJCFRHVZBYR8",
+          "address_hash_bytes": "0x35e2fdeee173024af6848ca6e335691b55498fc4",
+          "address_version": 21,
+        },
+      },
+    },
+    "anchor_mode": AnchorModeID.Any,
+    "post_condition_mode": PostConditionModeID.Deny,
+    "post_conditions": [],
+    "post_conditions_buffer": "0x0200000000",
+    "payload": {
+      "type_id": TxPayloadTypeID.TokenTransfer,
+      "amount": "10000",
+      "recipient": {
+        "type_id": PrincipalTypeID.Standard,
+        "address": "ST1RFD5Q2QPK3E0F08HG9XDX7SSC7CNRS0QR0SGEV",
+        "address_hash_bytes": "0x70f696e2bda63701e044609eb7a7ce5876571905",
+        "address_version": 26,
+      },
+      "memo_hex":
+        "0x00000000000000000000000000000000000000000000000000000000000000000000",
+    },
+  });
 });
