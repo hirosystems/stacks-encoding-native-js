@@ -25,7 +25,7 @@ pub fn eval<'a, 'b, C: Context<'a>>(
 
 #[allow(dead_code)]
 pub fn console_log<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<()> {
-    let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
+    let console_global: Handle<JsObject> = cx.global::<JsObject>("console")?;
     let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
     log_fn
         .call_with(cx)
@@ -36,7 +36,7 @@ pub fn console_log<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> Neo
 
 #[allow(dead_code)]
 pub fn console_log_val(cx: &mut FunctionContext, msg: Handle<JsValue>) -> NeonResult<()> {
-    let console_global: Handle<JsObject> = cx.global().get(cx, "console")?;
+    let console_global: Handle<JsObject> = cx.global::<JsObject>("console")?;
     let log_fn: Handle<JsFunction> = console_global.get(cx, "log")?;
     log_fn.call_with(cx).arg(msg).apply::<JsValue, _>(cx)?;
     Ok(())
@@ -47,14 +47,14 @@ pub fn json_parse<'a, C: Context<'a>, S: AsRef<str>>(
     cx: &mut C,
     input: S,
 ) -> NeonResult<Handle<'a, JsValue>> {
-    let json_global: Handle<JsObject> = cx.global().get(cx, "JSON")?;
+    let json_global: Handle<JsObject> = cx.global::<JsObject>("JSON")?;
     let json_parse: Handle<JsFunction> = json_global.get(cx, "parse")?;
     let result: Handle<JsValue> = json_parse.call_with(cx).arg(cx.string(input)).apply(cx)?;
     Ok(result)
 }
 
 pub fn arg_as_bytes_copied(cx: &mut FunctionContext, arg_index: i32) -> NeonResult<Box<[u8]>> {
-    let input_arg: Handle<JsValue> = cx.argument(arg_index)?;
+    let input_arg: Handle<JsValue> = cx.argument(arg_index as usize)?;
     if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
         let val_bytes = decode_hex(handle.value(cx))
             .or_else(|e| cx.throw_error(format!("Hex parsing error: {}", e)))?;
@@ -73,7 +73,7 @@ where
     F: Fn(&[u8]) -> Result<T, String>,
 {
     let input_arg: Handle<JsValue> = cx
-        .argument(arg_index)
+        .argument(arg_index as usize)
         .or_else(|e| Err(format!("Error getting function arg {}: {}", arg_index, e)))?;
     if let Ok(handle) = input_arg.downcast::<JsString, _>(cx) {
         let val_bytes =

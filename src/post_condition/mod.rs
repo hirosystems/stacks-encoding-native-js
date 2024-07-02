@@ -26,7 +26,7 @@ pub fn decode_tx_post_conditions(mut cx: FunctionContext) -> JsResult<JsObject> 
                 e
             ))
         })?);
-        let array_result = JsArray::new(&mut cx, result_length);
+        let array_result = JsArray::new(&mut cx, result_length as usize);
         // next bytes are serialized post condition items
         let post_condition_bytes = &input_bytes[5..];
         let post_condition_bytes_len = post_condition_bytes.len() as u64;

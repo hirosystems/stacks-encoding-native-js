@@ -39,7 +39,7 @@ pub fn decode_clarity_val<T: AsRef<[u8]>>(
                 cur_obj.set(cx, "buffer", obj_buffer)?;
             }
             List(data) => {
-                let list_obj = JsArray::new(cx, data.len() as u32);
+                let list_obj = JsArray::new(cx, data.len());
                 for (i, x) in data.iter().enumerate() {
                     let item_obj = cx.empty_object();
                     decode_clarity_val(

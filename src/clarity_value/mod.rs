@@ -54,7 +54,7 @@ pub fn decode_clarity_value_array(mut cx: FunctionContext) -> JsResult<JsArray> 
         0
     };
 
-    let array_result = JsArray::new(&mut cx, result_length);
+    let array_result = JsArray::new(&mut cx, result_length as usize);
 
     let deep: bool = match cx.argument_opt(1) {
         Some(arg) => arg
