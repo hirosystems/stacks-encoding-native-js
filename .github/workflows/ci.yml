@@ -236,7 +236,9 @@ jobs:
           distro: ubuntu_latest
           githubToken: ${{ github.token }}
           install: |
-            apt-get update && apt-get install -y --no-install-recommends nodejs npm
+            apt-get update && apt-get install -y curl
+            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            apt-get install -y --no-install-recommends nodejs
           run: |
             npm run test:js
 
