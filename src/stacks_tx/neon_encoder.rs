@@ -55,7 +55,7 @@ impl NeonJsSerialize for StacksTransaction {
         let post_condition_mode = cx.number(self.post_condition_mode as u8);
         obj.set(cx, "post_condition_mode", post_condition_mode)?;
 
-        let post_conditions = JsArray::new(cx, self.post_conditions.len() as u32);
+        let post_conditions = JsArray::new(cx, self.post_conditions.len());
         for (i, x) in self.post_conditions.iter().enumerate() {
             let post_condition_obj = cx.empty_object();
             x.neon_js_serialize(cx, &post_condition_obj)?;
@@ -616,7 +616,7 @@ impl NeonJsSerialize for TransactionContractCall {
         obj.set(cx, "function_name", function_name)?;
 
         let mut function_args_raw = u32::to_be_bytes(self.function_args.len() as u32).to_vec();
-        let function_args = JsArray::new(cx, self.function_args.len() as u32);
+        let function_args = JsArray::new(cx, self.function_args.len());
         for (i, clarity_val) in self.function_args.iter().enumerate() {
             let val_obj = cx.empty_object();
             function_args_raw.extend_from_slice(&clarity_val.serialized_bytes.as_ref().unwrap());

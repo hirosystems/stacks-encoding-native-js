@@ -40,10 +40,12 @@ impl StacksAddress {
 pub enum AddressHashMode {
     // serialization modes for public keys to addresses.
     // We support four different modes due to legacy compatibility with Stacks v1 addresses:
-    SerializeP2PKH = 0x00,  // hash160(public-key), same as bitcoin's p2pkh
-    SerializeP2SH = 0x01,   // hash160(multisig-redeem-script), same as bitcoin's multisig p2sh
+    SerializeP2PKH = 0x00, // hash160(public-key), same as bitcoin's p2pkh
+    SerializeP2SH = 0x01,  // hash160(multisig-redeem-script), same as bitcoin's multisig p2sh
+    SerializeP2SHNonSequential = 0x05, // hash160(multisig-redeem-script), same as bitcoin's multisig p2sh (non-sequential signing)
     SerializeP2WPKH = 0x02, // hash160(segwit-program-00(p2pkh)), same as bitcoin's p2sh-p2wpkh
     SerializeP2WSH = 0x03,  // hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh
+    SerializeP2WSHNonSequential = 0x07, // hash160(segwit-program-00(public-keys)), same as bitcoin's p2sh-p2wsh (non-sequential signing)
 }
 
 impl AddressHashMode {
@@ -70,10 +72,16 @@ impl TryFrom<u8> for AddressHashMode {
         match value {
             x if x == AddressHashMode::SerializeP2PKH as u8 => Ok(AddressHashMode::SerializeP2PKH),
             x if x == AddressHashMode::SerializeP2SH as u8 => Ok(AddressHashMode::SerializeP2SH),
+            x if x == AddressHashMode::SerializeP2SHNonSequential as u8 => {
+                Ok(AddressHashMode::SerializeP2SHNonSequential)
+            }
             x if x == AddressHashMode::SerializeP2WPKH as u8 => {
                 Ok(AddressHashMode::SerializeP2WPKH)
             }
             x if x == AddressHashMode::SerializeP2WSH as u8 => Ok(AddressHashMode::SerializeP2WSH),
+            x if x == AddressHashMode::SerializeP2WSHNonSequential as u8 => {
+                Ok(AddressHashMode::SerializeP2WSHNonSequential)
+            }
             _ => Err(format!("Invalid version {}", value)),
         }
     }
