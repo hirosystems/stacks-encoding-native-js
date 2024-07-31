@@ -1,5 +1,6 @@
 import {
   AnchorModeID,
+  ClarityVersion,
   decodeTransaction,
   PostConditionAuthFlag,
   PostConditionModeID,
@@ -10,7 +11,8 @@ import {
   TxPayloadNakamotoCoinbase,
   TxPayloadTypeID,
   TxPublicKeyEncoding,
-  TxSpendingConditionMultiSigHashMode
+  TxSpendingConditionMultiSigHashMode,
+  TxSpendingConditionSingleSigHashMode
 } from '../index.js';
 
 test('stacks3.0 - decode tx - tenure change', () => {
@@ -233,5 +235,41 @@ test("stacks 3.0 - decode tx - non-sequential multi-sig", () => {
       "memo_hex":
         "0x00000000000000000000000000000000000000000000000000000000000000000000",
     },
+  });
+});
+
+test('stacks 3.0 - decode tx - versioned smart contract Clariy 3', () => {
+  const tx = '8080000000040005572d04565d56f67e84ad7e20deedd8e7bba2fd00000000000000000000000000000bb800010c3287ab0587cf952022e079d261baeacc533d8c92b754136271450eb121ba4c0849f3c47f5a6f967dd1088e8242a9f9ed0454bfadaa19c71d25c8812e47160a030200000000060307636f756e7465720000004e28646566696e652d646174612d76617220636f756e742075696e74207530290a28646566696e652d726561642d6f6e6c7920286765742d636f756e742920287661722d67657420636f756e742929';
+  const decoded = decodeTransaction(tx);
+
+  expect(decoded).toEqual({
+    "tx_id": "0xcd544ee70fe7f15043245217d1ec16cc8d7f68b739adc6ab2925c1c6fd9edc3b",
+    "version": TransactionVersion.Testnet,
+    "chain_id": 2147483648,
+    "auth": {
+      "type_id": PostConditionAuthFlag.Standard,
+      "origin_condition": {
+        "hash_mode": TxSpendingConditionSingleSigHashMode.P2PKH,
+        "signer": {
+          "address_version": 26,
+          "address_hash_bytes": "0x05572d04565d56f67e84ad7e20deedd8e7bba2fd",
+          "address": "ST2NEB84ASENDXKYGJPQW86YXQCEFEX2ZQPG87ND"
+        },
+        "nonce": "0",
+        "tx_fee": "3000",
+        "key_encoding": TxPublicKeyEncoding.Compressed,
+        "signature": "0x010c3287ab0587cf952022e079d261baeacc533d8c92b754136271450eb121ba4c0849f3c47f5a6f967dd1088e8242a9f9ed0454bfadaa19c71d25c8812e47160a"
+      }
+    },
+    "anchor_mode": AnchorModeID.Any,
+    "post_condition_mode": PostConditionModeID.Deny,
+    "post_conditions": [],
+    "post_conditions_buffer": "0x0200000000",
+    "payload": {
+      "type_id": TxPayloadTypeID.VersionedSmartContract,
+      "clarity_version": ClarityVersion.Clarity3,
+      "contract_name": "counter",
+      "code_body": "(define-data-var count uint u0)\n(define-read-only (get-count) (var-get count))"
+    }
   });
 });
