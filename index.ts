@@ -291,6 +291,7 @@ export enum TxSpendingConditionMultiSigHashMode {
 export enum ClarityVersion {
     Clarity1 = 1,
     Clarity2 = 2,
+    Clarity3 = 3,
 }
 
 export interface DecodedTxSpendingConditionSingleSig {

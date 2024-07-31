@@ -339,6 +339,7 @@ impl ClarityVersion {
         match n {
             x if x == ClarityVersion::Clarity1 as u8 => Some(ClarityVersion::Clarity1),
             x if x == ClarityVersion::Clarity2 as u8 => Some(ClarityVersion::Clarity2),
+            x if x == ClarityVersion::Clarity3 as u8 => Some(ClarityVersion::Clarity3),
             _ => None,
         }
     }
@@ -687,6 +688,7 @@ pub enum TransactionPublicKeyEncoding {
 pub enum ClarityVersion {
     Clarity1 = 1,
     Clarity2 = 2,
+    Clarity3 = 3,
 }
 
 #[repr(u8)]
