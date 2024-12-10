@@ -169,6 +169,7 @@ jobs:
           if-no-files-found: error
 
   build_darwin-x64:
+    if: ${{ false }}
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v3
@@ -332,6 +333,7 @@ jobs:
         run: npm i && npm test
 
   test_darwin-x64:
+    if: ${{ false }}
     runs-on: macos-14
     needs:
       - build_darwin-x64
@@ -359,7 +361,6 @@ jobs:
       - build_linux-x64-glibc
       - build_linux-arm64-glibc
       - build_win-x64
-      - build_darwin-x64
       - build_darwin-arm64
     env:
       NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha.0' }}
