@@ -223,14 +223,6 @@ impl MultisigSpendingCondition {
             };
         }
 
-        // must be given the right number of signatures
-        if num_sigs_given != signatures_required {
-            return Err(format!(
-                "Failed to parse multisig spending condition: got {} sigs, expected {}",
-                num_sigs_given, signatures_required
-            ))?;
-        }
-
         // must all be compressed if we're using P2WSH
         if have_uncompressed && hash_mode == MultisigHashMode::P2WSH {
             return Err(format!(
