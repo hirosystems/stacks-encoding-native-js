@@ -332,7 +332,7 @@ jobs:
         run: npm i && npm test
 
   test_darwin-x64:
-    runs-on: macos-12
+    runs-on: macos-14
     needs:
       - build_darwin-x64
     steps:
