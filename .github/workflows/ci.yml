@@ -271,7 +271,7 @@ jobs:
   test_linux-x64-glibc:
     runs-on: ubuntu-latest
     container:
-      image: node:16-bullseye
+      image: node:18-bullseye
     needs:
       - build_linux-x64-glibc
     steps:
@@ -293,7 +293,7 @@ jobs:
   test_linux-x64-musl:
     runs-on: ubuntu-latest
     container:
-      image: node:16-alpine
+      image: node:18-alpine
     needs:
       - build_linux-x64-musl
     steps:
