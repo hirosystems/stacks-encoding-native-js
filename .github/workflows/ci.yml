@@ -32,7 +32,7 @@ jobs:
           node-version: '16'
       - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
-        run: curl -O -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-cross.tgz
+        run: curl -O -C -L - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-cross.tgz
       - name: Install x86_64-linux-musl-cross toolchain
         run: tar xf x86_64-linux-musl-cross.tgz
       - name: Configure linux-x64-musl cross compile
@@ -67,7 +67,7 @@ jobs:
           node-version: '16'
       - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
-        run: curl -O -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/aarch64-linux-musl-cross.tgz
+        run: curl -O -C -L - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/aarch64-linux-musl-cross.tgz
       - name: Install aarch64-linux-musl-cross toolchain
         run: tar xf aarch64-linux-musl-cross.tgz
       - name: Configure linux-arm64-musl cross compile
