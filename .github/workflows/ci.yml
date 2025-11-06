@@ -271,7 +271,7 @@ jobs:
   test_linux-x64-glibc:
     runs-on: ubuntu-latest
     container:
-      image: node:18-bullseye
+      image: node:18-bookworm
     needs:
       - build_linux-x64-glibc
     steps:
