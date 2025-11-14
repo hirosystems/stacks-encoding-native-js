@@ -16,20 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
 
   build_linux-x64-musl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-cross.tgz
@@ -49,7 +49,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-x64-musl
           path: native/linux-x64-musl.node
@@ -58,13 +58,13 @@ jobs:
   build_linux-arm64-musl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-musl
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/aarch64-linux-musl-cross.tgz
@@ -84,7 +84,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-arm64-musl
           path: native/linux-arm64-musl.node
@@ -95,19 +95,19 @@ jobs:
     container:
       image: rust
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-x64-glibc
           path: native/linux-x64-glibc.node
@@ -118,13 +118,13 @@ jobs:
     container:
       image: rust
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-gnu
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: Install cross compile deps
         run: |
@@ -141,7 +141,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-arm64-glibc
           path: native/linux-arm64-glibc.node
@@ -150,19 +150,19 @@ jobs:
   build_win-x64:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: win32-x64
           path: native/win32-x64.node
@@ -172,19 +172,19 @@ jobs:
     if: ${{ false }}
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-apple-darwin
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: darwin-x64
           path: native/darwin-x64.node
@@ -193,13 +193,13 @@ jobs:
   build_darwin-arm64:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: '16'
+          node-version: '25'
       - uses: Swatinem/rust-cache@v2
       - name: Configure macos-arm64 cross compile
         run: |
@@ -210,7 +210,7 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build:cargo
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: darwin-arm64
           path: native/darwin-arm64.node
@@ -221,8 +221,8 @@ jobs:
     needs:
       - build_linux-arm64-glibc
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: linux-arm64-glibc
           path: native
@@ -248,8 +248,8 @@ jobs:
     needs:
       - build_linux-arm64-musl
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: linux-arm64-musl
           path: native
@@ -275,8 +275,8 @@ jobs:
     needs:
       - build_linux-x64-glibc
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: linux-x64-glibc
           path: native
@@ -297,8 +297,8 @@ jobs:
     needs:
       - build_linux-x64-musl
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: linux-x64-musl
           path: native
@@ -317,8 +317,8 @@ jobs:
     needs:
       - build_win-x64
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: win32-x64
           path: native
@@ -338,8 +338,8 @@ jobs:
     needs:
       - build_darwin-x64
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
         with:
           name: darwin-x64
           path: native
@@ -353,8 +353,7 @@ jobs:
         working-directory: examples
         run: npm i && npm test
 
-  npm-package:
-    runs-on: ubuntu-latest
+  build-publish:
     needs:
       - build_linux-x64-musl
       - build_linux-arm64-musl
@@ -362,17 +361,37 @@ jobs:
       - build_linux-arm64-glibc
       - build_win-x64
       - build_darwin-arm64
-    env:
-      NPM_PACKAGE_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-version || '0.0.1-alpha.0' }}
-      NPM_PACKAGE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.npm-package-tag || 'alpha' }}
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    outputs:
+      docker_image_digest: ${{ steps.docker_push.outputs.digest }}
+      version: ${{ steps.docker_meta.outputs.version }}
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Generate release bot app token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
         with:
-          node-version: '16'
-          registry-url: https://registry.npmjs.org
-          always-auth: true
-      - uses: actions/download-artifact@v4
+          app-id: ${{ secrets.HIROSYSTEMS_RELEASE_BOT_ID }}
+          private-key: ${{ secrets.HIROSYSTEMS_RELEASE_BOT_PEM }}
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Get bot user ID
+        id: bot-user-id
+        run: |
+          echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - uses: actions/download-artifact@v6
         with:
           path: native
       - name: Position downloaded artifacts
@@ -381,23 +400,19 @@ jobs:
           find ./native -mindepth 2 -type f -exec mv -t ./native -i '{}' +
           find ./native -mindepth 1 -type d -empty -delete
           ls -R ./native
-      - name: npm version
-        run: npm version --git-tag-version=false --allow-same-version $NPM_PACKAGE_VERSION
-      - name: npm build
-        run: |
-          npm i
-          npm run build:ts
-      - name: npm pack
-        run: |
-          npm pack
-          mv "stacks-encoding-native-js-$NPM_PACKAGE_VERSION.tgz" "stacks-encoding-native-js.tgz"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: stacks-encoding-native-js.tgz
-          path: stacks-encoding-native-js.tgz
-          if-no-files-found: error
-      - name: Publish npm package
-        if: github.event_name == 'workflow_dispatch'
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@9cc899c47e6841430bbaedb43de1560a568dfd16 # v5
+        id: semantic
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish stacks-encoding-native-js.tgz --tag $NPM_PACKAGE_TAG --access public
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+          SEMANTIC_RELEASE_PACKAGE: ${{ github.event.repository.name }}
+          GIT_AUTHOR_EMAIL: "${{ steps.bot-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
+          GIT_COMMITTER_EMAIL: "${{ steps.bot-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
+        with:
+          extra_plugins: |
+            @semantic-release/changelog@6.0.3
+            @semantic-release/git@10.0.1
+            @semantic-release/exec@7.1.0
+            conventional-changelog-conventionalcommits@9.1.0
