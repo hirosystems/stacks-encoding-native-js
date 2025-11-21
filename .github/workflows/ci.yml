@@ -29,7 +29,7 @@ jobs:
           targets: x86_64-unknown-linux-musl
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-cross.tgz
@@ -64,7 +64,7 @@ jobs:
           targets: aarch64-unknown-linux-musl
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/aarch64-linux-musl-cross.tgz
@@ -101,7 +101,7 @@ jobs:
           targets: x86_64-unknown-linux-gnu
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -124,7 +124,7 @@ jobs:
           targets: aarch64-unknown-linux-gnu
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: Install cross compile deps
         run: |
@@ -156,7 +156,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -178,7 +178,7 @@ jobs:
           targets: x86_64-apple-darwin
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -199,7 +199,7 @@ jobs:
           targets: aarch64-apple-darwin
       - uses: actions/setup-node@v6
         with:
-          node-version: '25'
+          node-version: '20'
       - uses: Swatinem/rust-cache@v2
       - name: Configure macos-arm64 cross compile
         run: |
@@ -238,7 +238,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update && apt-get install -y curl
-            curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
             apt-get install -y --no-install-recommends nodejs
           run: |
             npm run test:js
