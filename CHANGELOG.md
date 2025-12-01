@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/hirosystems/stacks-encoding-native-js/compare/v1.1.0...v1.2.0) (2025-12-01)
+
+### Features
+
+* support sip-034 tenure extend causes ([#27](https://github.com/hirosystems/stacks-encoding-native-js/issues/27)) ([b43b197](https://github.com/hirosystems/stacks-encoding-native-js/commit/b43b1979e63cbbb0e99f5ceddf84b8eaa2fc3779))
+
 ## 1.0.0 (2025-11-21)
 
 ### Features
