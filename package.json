@@ -6,7 +6,7 @@
   "scripts": {
     "build:cargo": "node build.js",
     "build:ts": "tsc",
-    "build": "npm run build:ts && npm run build:cargo",
+    "build": "npm run build:ts",
     "build:dev": "npm run build:ts && npm run build:cargo -- dev",
     "test:cargo": "cargo test",
     "test:js": "jest",
