@@ -29,7 +29,7 @@ jobs:
           targets: x86_64-unknown-linux-musl
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: Download x86_64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/x86_64-linux-musl-cross.tgz
@@ -64,7 +64,7 @@ jobs:
           targets: aarch64-unknown-linux-musl
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: Download aarch64-linux-musl-cross toolchain
         run: curl -O -L -C - https://github.com/musl-cc/musl.cc/releases/download/v0.0.1/aarch64-linux-musl-cross.tgz
@@ -101,7 +101,7 @@ jobs:
           targets: x86_64-unknown-linux-gnu
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -124,7 +124,7 @@ jobs:
           targets: aarch64-unknown-linux-gnu
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: Install cross compile deps
         run: |
@@ -156,7 +156,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -178,7 +178,7 @@ jobs:
           targets: x86_64-apple-darwin
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: npm i
         run: npm i
@@ -199,7 +199,7 @@ jobs:
           targets: aarch64-apple-darwin
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
       - uses: Swatinem/rust-cache@v2
       - name: Configure macos-arm64 cross compile
         run: |
@@ -382,16 +382,21 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Upgrade to latest npm
+        run: |
+          npm install -g npm@latest
+          npm -v
+
       - name: Get bot user ID
         id: bot-user-id
         run: |
           echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
 
       - uses: actions/download-artifact@v6
         with:
@@ -404,12 +409,11 @@ jobs:
           ls -R ./native
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6
         id: semantic
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           SEMANTIC_RELEASE_PACKAGE: ${{ github.event.repository.name }}
           GIT_AUTHOR_EMAIL: "${{ steps.bot-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
           GIT_COMMITTER_EMAIL: "${{ steps.bot-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
