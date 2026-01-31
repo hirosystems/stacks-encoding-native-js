@@ -292,6 +292,8 @@ export enum ClarityVersion {
     Clarity1 = 1,
     Clarity2 = 2,
     Clarity3 = 3,
+    Clarity4 = 4,
+    Clarity5 = 5,
 }
 
 export interface DecodedTxSpendingConditionSingleSig {

@@ -333,6 +333,7 @@ impl ClarityVersion {
             x if x == ClarityVersion::Clarity2 as u8 => Some(ClarityVersion::Clarity2),
             x if x == ClarityVersion::Clarity3 as u8 => Some(ClarityVersion::Clarity3),
             x if x == ClarityVersion::Clarity4 as u8 => Some(ClarityVersion::Clarity4),
+            x if x == ClarityVersion::Clarity5 as u8 => Some(ClarityVersion::Clarity5),
             _ => None,
         }
     }
@@ -683,6 +684,7 @@ pub enum ClarityVersion {
     Clarity2 = 2,
     Clarity3 = 3,
     Clarity4 = 4,
+    Clarity5 = 5,
 }
 
 #[repr(u8)]
