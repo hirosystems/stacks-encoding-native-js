@@ -529,3 +529,63 @@ export type ClarityValueOptionalBool = ClarityValueOptional<ClarityValueBool>;
  * Type for commonly used `(optional uint)`
  */
 export type ClarityValueOptionalUInt = ClarityValueOptional<ClarityValueUInt>;
+
+// ============================================================================
+// Nakamoto Block Types
+// ============================================================================
+
+/**
+ * Decoded Nakamoto block result containing header and transactions
+ */
+export interface DecodedNakamotoBlockResult {
+    /** Block ID (Sha512/256 hash of the serialized block header) */
+    block_id: string;
+    /** Decoded block header */
+    header: DecodedNakamotoBlockHeader;
+    /** Array of decoded transactions in the block */
+    txs: DecodedTxResult[];
+}
+
+/**
+ * Decoded Nakamoto block header
+ */
+export interface DecodedNakamotoBlockHeader {
+    /** Block header version */
+    version: number;
+    /** Total number of StacksBlock and NakamotoBlocks preceding this block in this block's history */
+    chain_length: string;
+    /** Total amount of BTC spent producing the sortition that selected this block's miner */
+    burn_spent: string;
+    /** Consensus hash of the burnchain block that selected this tenure (hex string) */
+    consensus_hash: string;
+    /** Index block hash of the immediate parent of this block (hex string) */
+    parent_block_id: string;
+    /** Root of a SHA512/256 merkle tree over all this block's contained transactions (hex string) */
+    tx_merkle_root: string;
+    /** MARF trie root hash after this block has been processed (hex string) */
+    state_index_root: string;
+    /** Unix timestamp of when this block was mined */
+    timestamp: string;
+    /** Recoverable ECDSA signature from the tenure's miner (hex string) */
+    miner_signature: string;
+    /** Array of recoverable ECDSA signatures from the signer set (hex strings) */
+    signer_signature: string[];
+    /** Bitvec for PoX treatment - whether reward addresses should be punished (hex string) */
+    pox_treatment: string;
+}
+
+/**
+ * Extended tenure change causes for Nakamoto blocks
+ */
+export enum TenureChangeCauseExtended {
+    /** A valid winning block-commit */
+    BlockFound = 0,
+    /** The next burnchain block is taking too long, so extend the runtime budget */
+    Extended = 1,
+    /** SIP-034: extend specific dimensions */
+    ExtendedRuntime = 2,
+    ExtendedReadCount = 3,
+    ExtendedReadLength = 4,
+    ExtendedWriteCount = 5,
+    ExtendedWriteLength = 6,
+}

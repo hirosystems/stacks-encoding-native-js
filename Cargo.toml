@@ -2,7 +2,7 @@
 name = "stacks-encoding-native-js"
 version = "0.1.0"
 license = "ISC"
-edition = "2018"
+edition = "2021"
 exclude = ["index.node"]
 resolver = "2"
 
@@ -21,40 +21,42 @@ incremental = true
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
+# Stacks codec from clarinet - provides all wire format encoding/decoding
+stacks-codec = { git = "https://github.com/stx-labs/clarinet", branch = "main" }
+
+# Clarity types and stacks-common from stacks-core (same revision used by stacks-codec)
+clarity = { git = "https://github.com/stacks-network/stacks-core.git", rev = "3da96c1a3af20bd677a7d8bfd17dcfbcde86d78b", default-features = false, features = ["developer-mode"] }
+stacks-common = { package = "stacks-common", git = "https://github.com/stacks-network/stacks-core.git", rev = "3da96c1a3af20bd677a7d8bfd17dcfbcde86d78b", default-features = false, features = ["developer-mode"] }
+
+# Hex encoding utilities
 hex-simd = { version = "0.5.0" }
 simd-abstraction = { version = "0.5.0", features = ["alloc", "std"] }
+
+# Base58 encoding for Bitcoin addresses
+bs58 = "0.5"
+
+# Memo normalization
 regex = "1.5"
-git-version = "0.3.5"
 lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
-rand = "0.8.5"
-byteorder = "1.4.3"
 
+# Version info
+git-version = "0.3.5"
+
+# Neon bindings for Node.js
+[dependencies.neon]
+version = "1.0.0"
+default-features = false
+features = ["napi-6"]
+
+# Optional profiling support
 [dependencies.pprof]
 version = "0.9.1"
 features = ["flamegraph"]
 optional = true
 
-[target.'cfg(all(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"), not(target_env = "msvc")))'.dependencies]
-sha2 = { version = "0.10", features = ["asm"] }
-
-[target.'cfg(any(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")), target_env = "msvc"))'.dependencies]
-sha2 = { version = "0.10" }
-
-[dependencies.neon]
-version = "1.0.0"
-# git = "https://github.com/zone117x/neon"
-# rev = "bdb936a7fba8fb932fc61cbe529e06f65f75f9d9"
-default-features = false
-features = ["napi-6"]
-
 [dev-dependencies]
 flate2 = "1.0.22"
-criterion = "0.3"
 
 [features]
 profiling = ["pprof"]
-
-[[bench]]
-name = "c32_bench"
-harness = false

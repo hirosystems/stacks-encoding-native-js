@@ -1,4 +1,4 @@
-import type { DecodedPostConditionsResult, DecodedTxResult, ClarityValue, ClarityValueAbstract } from ".";
+import type { DecodedPostConditionsResult, DecodedTxResult, ClarityValue, ClarityValueAbstract, DecodedNakamotoBlockResult, DecodedNakamotoBlockHeader } from ".";
 
 export function getVersion(): string;
 
@@ -45,6 +45,20 @@ export function decodeClarityValueToPrincipal(clarityValue: string | Buffer) : s
 export function stacksAddressFromParts(version: number, hash160: string | Buffer): string;
 
 export function memoToString(memo: string | Buffer): string;
+
+/**
+ * Decode a Nakamoto block from serialized bytes
+ * @param arg - Hex string or Buffer containing the serialized Nakamoto block
+ * @returns Decoded block with header and transactions
+ */
+export function decodeNakamotoBlock(arg: string | Buffer): DecodedNakamotoBlockResult;
+
+/**
+ * Decode a Nakamoto block header from serialized bytes
+ * @param arg - Hex string or Buffer containing the serialized Nakamoto block header
+ * @returns Decoded block header
+ */
+export function decodeNakamotoBlockHeader(arg: string | Buffer): DecodedNakamotoBlockHeader;
 
 export function startProfiler(): string;
 
