@@ -1,6 +1,6 @@
 {
   "name": "@hirosystems/stacks-encoding-native-js",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Encoding & decoding functions for the Stacks blockchain exposed as a fast native Node.js addon",
   "main": "index.js",
   "scripts": {

@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/hirosystems/stacks-encoding-native-js/compare/v1.2.0...v1.3.0) (2026-02-03)
+
+### Features
+
+* support clarity 5 ([#31](https://github.com/hirosystems/stacks-encoding-native-js/issues/31)) ([1dee1f3](https://github.com/hirosystems/stacks-encoding-native-js/commit/1dee1f3c2d360940e71638ad5ac975e39482f734))
+
 ## [1.2.0](https://github.com/hirosystems/stacks-encoding-native-js/compare/v1.1.0...v1.2.0) (2025-12-01)
 
 ### Features
