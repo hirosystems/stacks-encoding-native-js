@@ -238,7 +238,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update && apt-get install -y curl
-            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
             apt-get install -y --no-install-recommends nodejs
           run: |
             npm run test:js
@@ -271,7 +271,7 @@ jobs:
   test_linux-x64-glibc:
     runs-on: ubuntu-latest
     container:
-      image: node:18-bookworm
+      image: node:24-bookworm
     needs:
       - build_linux-x64-glibc
     steps:
@@ -293,7 +293,7 @@ jobs:
   test_linux-x64-musl:
     runs-on: ubuntu-latest
     container:
-      image: node:18-alpine
+      image: node:24-alpine
     needs:
       - build_linux-x64-musl
     steps:

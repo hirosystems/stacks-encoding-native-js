@@ -13,10 +13,8 @@
 
 Under the hood, this library uses the [`stacks-codec`](https://github.com/stx-labs/clarinet/tree/main/components/stacks-codec) crate from Clarinet for wire format deserialization, ensuring compatibility with the canonical Stacks implementation.
 
-_This project was bootstrapped by [create-neon](https://www.npmjs.com/package/create-neon)._
-
 ### Runtime Support
-* Node.js v16+
+* Node.js v20+
 
 ### Platform Support
 
