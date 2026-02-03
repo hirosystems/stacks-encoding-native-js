@@ -6,8 +6,9 @@ use crate::hex::encode_hex;
 use crate::neon_util::*;
 
 use self::deserialize::StacksTransaction;
-mod deserialize;
-mod neon_encoder;
+pub mod deserialize;
+pub mod neon_encoder;
+pub use neon_encoder::neon_encoder_internal;
 
 pub fn decode_transaction(mut cx: FunctionContext) -> JsResult<JsObject> {
     let (tx, tx_id_bytes) = arg_as_bytes(&mut cx, 0, |val_bytes| {

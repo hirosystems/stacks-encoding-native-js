@@ -1,8 +1,22 @@
-import type { DecodedPostConditionsResult, DecodedTxResult, ClarityValue, ClarityValueAbstract } from ".";
+import type { DecodedPostConditionsResult, DecodedTxResult, DecodedNakamotoBlockResult, DecodedStacksBlockResult, ClarityValue, ClarityValueAbstract } from ".";
 
 export function getVersion(): string;
 
 export function decodeTransaction(arg: string | Buffer): DecodedTxResult;
+
+/**
+ * Decode a Nakamoto block (Stacks 3.x+).
+ * The input should be the raw binary block data as returned by /v3/blocks/{block_id} endpoint.
+ * @param arg - Hex string or Buffer containing the raw block data
+ */
+export function decodeNakamotoBlock(arg: string | Buffer): DecodedNakamotoBlockResult;
+
+/**
+ * Decode a Stacks 2.x block.
+ * The input should be the raw binary block data as returned by /v2/blocks/{block_id} endpoint.
+ * @param arg - Hex string or Buffer containing the raw block data
+ */
+export function decodeStacksBlock(arg: string | Buffer): DecodedStacksBlockResult;
 
 export function decodeClarityValueToRepr(arg: string | Buffer): string;
 

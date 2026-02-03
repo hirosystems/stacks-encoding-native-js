@@ -11,6 +11,7 @@ use crate::clarity_value::{
 };
 use crate::memo::memo_to_string;
 use crate::post_condition::decode_tx_post_conditions;
+use crate::stacks_block::{decode_nakamoto_block, decode_stacks_block};
 use crate::stacks_tx::decode_transaction;
 
 pub mod address;
@@ -20,6 +21,7 @@ pub mod memo;
 pub mod neon_util;
 pub mod post_condition;
 pub mod serialize_util;
+pub mod stacks_block;
 pub mod stacks_tx;
 
 const GIT_VERSION: &str = git_version!(
@@ -143,6 +145,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
+    cx.export_function("decodeNakamotoBlock", decode_nakamoto_block)?;
+    cx.export_function("decodeStacksBlock", decode_stacks_block)?;
     cx.export_function("stacksToBitcoinAddress", stacks_to_bitcoin_address)?;
     cx.export_function("bitcoinToStacksAddress", bitcoin_to_stacks_address)?;
     cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;

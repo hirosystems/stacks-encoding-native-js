@@ -240,6 +240,16 @@ export enum TenureChangeCause {
   BlockFound = 0,
   /** The next burnchain block is taking too long, so extend the runtime budget */
   Extended = 1,
+  /** SIP-034: extend specific dimensions - runtime */
+  ExtendedRuntime = 2,
+  /** SIP-034: extend specific dimensions - read count */
+  ExtendedReadCount = 3,
+  /** SIP-034: extend specific dimensions - read length */
+  ExtendedReadLength = 4,
+  /** SIP-034: extend specific dimensions - write count */
+  ExtendedWriteCount = 5,
+  /** SIP-034: extend specific dimensions - write length */
+  ExtendedWriteLength = 6,
 }
 
 export enum TxPayloadTypeID {
@@ -529,3 +539,90 @@ export type ClarityValueOptionalBool = ClarityValueOptional<ClarityValueBool>;
  * Type for commonly used `(optional uint)`
  */
 export type ClarityValueOptionalUInt = ClarityValueOptional<ClarityValueUInt>;
+
+// ============================================================================
+// Nakamoto Block Types (Stacks 3.x+)
+// ============================================================================
+
+export interface DecodedNakamotoBlockResult {
+    /** Hex encoded string of the block ID (index block hash) */
+    block_id: string;
+    header: NakamotoBlockHeader;
+    txs: DecodedTxResult[];
+}
+
+export interface NakamotoBlockHeader {
+    version: number;
+    /** String-quoted unsigned integer - total blocks preceding this one */
+    chain_length: string;
+    /** String-quoted unsigned integer - total BTC spent in sortition */
+    burn_spent: string;
+    /** Hex string (20 bytes) - consensus hash of the burnchain block */
+    consensus_hash: string;
+    /** Hex string (32 bytes) - parent block ID */
+    parent_block_id: string;
+    /** Hex string (32 bytes) - merkle root of transactions */
+    tx_merkle_root: string;
+    /** Hex string (32 bytes) - MARF trie root hash */
+    state_index_root: string;
+    /** String-quoted unsigned integer - Unix timestamp */
+    timestamp: string;
+    /** Hex string (65 bytes) - miner's ECDSA signature */
+    miner_signature: string;
+    /** Array of hex strings (65 bytes each) - signer signatures */
+    signer_signature: string[];
+    /** PoX treatment bitvec */
+    pox_treatment: BitVec;
+    /** Hex string (32 bytes) - computed block hash */
+    block_hash: string;
+    /** Hex string (32 bytes) - computed index block hash */
+    index_block_hash: string;
+}
+
+export interface BitVec {
+    /** Number of bits */
+    len: number;
+    /** Hex encoded data bytes */
+    data: string;
+    /** Array of boolean values for each bit */
+    bits: boolean[];
+}
+
+// ============================================================================
+// Stacks 2.x Block Types
+// ============================================================================
+
+export interface DecodedStacksBlockResult {
+    /** Hex encoded string of the block hash */
+    block_hash: string;
+    header: StacksBlockHeader;
+    txs: DecodedTxResult[];
+}
+
+export interface StacksBlockHeader {
+    version: number;
+    total_work: StacksWorkScore;
+    /** Hex string (80 bytes) - VRF proof */
+    proof: string;
+    /** Hex string (32 bytes) - parent block hash */
+    parent_block: string;
+    /** Hex string (32 bytes) - parent microblock hash */
+    parent_microblock: string;
+    /** Parent microblock sequence number */
+    parent_microblock_sequence: number;
+    /** Hex string (32 bytes) - merkle root of transactions */
+    tx_merkle_root: string;
+    /** Hex string (32 bytes) - MARF trie root hash */
+    state_index_root: string;
+    /** Hex string (20 bytes) - hash160 of microblock public key */
+    microblock_pubkey_hash: string;
+    /** Hex string (32 bytes) - computed block hash */
+    block_hash: string;
+}
+
+export interface StacksWorkScore {
+    /** String-quoted unsigned integer - burn amount */
+    burn: string;
+    /** String-quoted unsigned integer - work score */
+    work: string;
+}

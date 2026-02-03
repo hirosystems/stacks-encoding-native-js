@@ -22,9 +22,24 @@ use super::deserialize::{
     TransactionSpendingCondition, TransactionTenureChange, TransactionVersion,
 };
 
-struct TxSerializationContext {
-    transaction_version: TransactionVersion,
+/// Re-export for use in stacks_block module
+pub mod neon_encoder_internal {
+    use super::*;
+    
+    pub struct TxSerializationContext {
+        pub transaction_version: TransactionVersion,
+    }
+    
+    impl TxSerializationContext {
+        pub fn new(version: TransactionVersion) -> Self {
+            TxSerializationContext {
+                transaction_version: version,
+            }
+        }
+    }
 }
+
+use neon_encoder_internal::TxSerializationContext;
 
 impl NeonJsSerialize for StacksTransaction {
     fn neon_js_serialize(
