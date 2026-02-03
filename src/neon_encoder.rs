@@ -518,14 +518,14 @@ fn encode_transaction_auth<'a>(
     
     match auth {
         TransactionAuth::Standard(origin_condition) => {
-            let type_id = cx.number(0x04_f64); // AuthStandard
+            let type_id = cx.number(4_f64); // AuthStandard = 0x04
             obj.set(cx, "type_id", type_id)?;
             
             let origin_obj = encode_spending_condition(cx, origin_condition)?;
             obj.set(cx, "origin_condition", origin_obj)?;
         }
         TransactionAuth::Sponsored(origin_condition, sponsor_condition) => {
-            let type_id = cx.number(0x05_f64); // AuthSponsored
+            let type_id = cx.number(5_f64); // AuthSponsored = 0x05
             obj.set(cx, "type_id", type_id)?;
             
             let origin_obj = encode_spending_condition(cx, origin_condition)?;
