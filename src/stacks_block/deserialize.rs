@@ -35,7 +35,15 @@ impl BitVec {
             .into());
         }
 
-        let data_len = Self::data_len(len);
+        let expected_data_len = Self::data_len(len);
+        let data_len = fd.read_u32::<BigEndian>()?;
+        if data_len as u16 != expected_data_len {
+            return Err(format!(
+                "BitVec data length mismatch: expected {}, got {}",
+                expected_data_len, data_len
+            )
+            .into());
+        }
         let mut data = vec![0u8; data_len as usize];
         fd.read_exact(&mut data)?;
 
@@ -139,7 +147,8 @@ impl NakamotoBlockHeader {
         })
     }
 
-    /// Compute the block hash (sha512/256 of the header without signer signatures)
+    /// Compute the block hash (sha512/256 of header fields excluding signer_signature).
+    /// This is the same as the "signer signature hash" in the reference implementation.
     pub fn block_hash(&self) -> [u8; 32] {
         use sha2::{Digest, Sha512_256};
 
@@ -154,6 +163,9 @@ impl NakamotoBlockHeader {
         hasher.update(&self.state_index_root.0);
         hasher.update(self.timestamp.to_be_bytes());
         hasher.update(&self.miner_signature.0);
+        hasher.update(self.pox_treatment.len.to_be_bytes());
+        hasher.update((self.pox_treatment.data.len() as u32).to_be_bytes());
+        hasher.update(&self.pox_treatment.data);
 
         let result = hasher.finalize();
         let mut hash = [0u8; 32];
@@ -161,14 +173,14 @@ impl NakamotoBlockHeader {
         hash
     }
 
-    /// Compute the block ID (sha512/256 of consensus_hash + block_hash)
+    /// Compute the block ID (sha512/256 of block_hash + consensus_hash)
     pub fn block_id(&self) -> [u8; 32] {
         use sha2::{Digest, Sha512_256};
 
         let block_hash = self.block_hash();
         let mut hasher = Sha512_256::new();
-        hasher.update(&self.consensus_hash.0);
         hasher.update(&block_hash);
+        hasher.update(&self.consensus_hash.0);
 
         let result = hasher.finalize();
         let mut id = [0u8; 32];
@@ -324,12 +336,14 @@ impl StacksBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hex::encode_hex;
 
     #[test]
     fn test_bitvec_deserialize() {
         // Test a simple bitvec with 8 bits (1 byte of data)
         let data: Vec<u8> = vec![
             0x00, 0x08, // len = 8
+            0x00, 0x00, 0x00, 0x01, // data_len = 1
             0b10101010, // data
         ];
         let mut cursor = Cursor::new(data.as_ref());
@@ -340,5 +354,30 @@ mod tests {
         assert_eq!(bitvec.get(1), Some(false));
         assert_eq!(bitvec.get(7), Some(false));
         assert_eq!(bitvec.get(8), None);
+    }
+
+    #[test]
+    fn test_nakamoto_block_deserialize() {
+        let data = include_bytes!("../../tests/fixtures/nakamoto-block.bin");
+        let mut cursor = Cursor::new(data.as_ref());
+        let block = NakamotoBlock::deserialize(&mut cursor);
+        assert!(block.is_ok());
+        let block = block.unwrap();
+        assert_eq!(block.header.version, 0);
+        assert_eq!(block.header.chain_length, 557923);
+        assert_eq!(block.header.burn_spent, 403018706956);
+        assert_eq!(encode_hex(&block.header.consensus_hash.0).as_ref(), "0xe86587f4ed4ca465b87649ace9341d9fdfd113ba");
+        assert_eq!(encode_hex(&block.header.parent_block_id.0).as_ref(), "0x8de0fa074023b893f73c8491ab5c93bb3f5af4bd5f0449578b99b508cca61595");
+        assert_eq!(encode_hex(&block.header.tx_merkle_root.0).as_ref(), "0x080d35f6c5c02929a00fca1cc6f00a1c3828d905eb61e002ffd4e48f1ecef29d");
+        assert_eq!(encode_hex(&block.header.state_index_root.0).as_ref(), "0xbf5ed8f745df2629d0d971fe9667f75a352a5dea4c8a0e451dcaa72b375d28fc");
+        assert_eq!(block.header.timestamp, 1738687125);
+        assert_eq!(encode_hex(&block.header.miner_signature.0).as_ref(), "0x01b7ef0ca6fb1e109afb5d3a9f08bfee71b8fef82ad9a7e06a5fa9b732394513be7cc962950ce2fc940d4ae7c1cb731d33cd65ec032a3a097ac2669439fe31031d");
+        assert_eq!(block.header.signer_signature.len(), 24);
+        assert_eq!(block.header.pox_treatment.len, 3891);
+        assert_eq!(block.header.pox_treatment.data.len(), 487);
+        assert_eq!(encode_hex(&block.header.block_hash()).as_ref(), "0x536b854fa6ada87643e00c4a4880967b4f52404b95dca75780babb048f6a69fc");
+        assert_eq!(encode_hex(&block.header.block_id()).as_ref(), "0x05b7fbc03e541271a29baf21ad43e68e48070df018ebe5baa13892f3828be9bd");
+        assert_eq!(block.txs.len(), 1);
+        assert_eq!(cursor.position() as usize, data.len());
     }
 }
