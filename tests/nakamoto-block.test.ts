@@ -1,11 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  decodeNakamotoBlock,
-  decodeStacksBlock,
-  DecodedNakamotoBlockResult,
-  DecodedStacksBlockResult,
-} from '../index';
+import { decodeNakamotoBlock, decodeStacksBlock } from '../index';
 
 describe('Nakamoto block decoding', () => {
   it('should decode a Nakamoto block', () => {
@@ -17,24 +12,24 @@ describe('Nakamoto block decoding', () => {
     expect(result).toHaveProperty('txs');
 
     expect(result.header.version).toBe(0);
-    expect(result.header.chain_length).toBe('1');
-    expect(result.header.burn_spent).toBe('100');
-    expect(result.header.consensus_hash).toBe('0x1111111111111111111111111111111111111111');
+    expect(result.header.chain_length).toBe('557923');
+    expect(result.header.burn_spent).toBe('403018706956');
+    expect(result.header.consensus_hash).toBe('0xe86587f4ed4ca465b87649ace9341d9fdfd113ba');
     expect(result.header.parent_block_id).toBe(
-      '0x2222222222222222222222222222222222222222222222222222222222222222'
+      '0x8de0fa074023b893f73c8491ab5c93bb3f5af4bd5f0449578b99b508cca61595'
     );
     expect(result.header.tx_merkle_root).toBe(
-      '0x3333333333333333333333333333333333333333333333333333333333333333'
+      '0x080d35f6c5c02929a00fca1cc6f00a1c3828d905eb61e002ffd4e48f1ecef29d'
     );
     expect(result.header.state_index_root).toBe(
-      '0x4444444444444444444444444444444444444444444444444444444444444444'
+      '0xbf5ed8f745df2629d0d971fe9667f75a352a5dea4c8a0e451dcaa72b375d28fc'
     );
 
     expect(result.header.pox_treatment).toBeDefined();
-    expect(result.header.pox_treatment.len).toBe(1);
-    expect(result.header.pox_treatment.bits).toHaveLength(1);
+    expect(result.header.pox_treatment.len).toBe(3891);
+    expect(result.header.pox_treatment.data).toHaveLength(976);
 
-    expect(result.txs).toHaveLength(0);
+    expect(result.txs).toHaveLength(1);
 
     // Computed hashes should be hex strings (with 0x prefix)
     expect(result.header.block_hash).toMatch(/^0x[0-9a-f]{64}$/);
