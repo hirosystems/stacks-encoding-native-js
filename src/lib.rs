@@ -1,6 +1,5 @@
 use git_version::git_version;
 use neon::prelude::*;
-use neon::types::buffer::TypedArray;
 
 use crate::address::{
     bitcoin_to_stacks_address, decode_clarity_value_to_principal, decode_stacks_address,

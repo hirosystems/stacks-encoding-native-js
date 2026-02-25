@@ -43,7 +43,7 @@ if (fs.existsSync(outputFilePath)) {
 }
 
 let runArgs = [
-  '-nc', outputFilePath,
+  '-ac', 'stacks-encoding-native-js', outputFilePath,
   '--',
   'cargo',
   'build',
