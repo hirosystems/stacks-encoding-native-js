@@ -217,6 +217,8 @@ jobs:
   test_linux-arm64-glibc:
     if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs:
       - build_linux-arm64-glibc
     steps:
@@ -245,6 +247,8 @@ jobs:
   test_linux-arm64-musl:
     if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs:
       - build_linux-arm64-musl
     steps:
@@ -271,6 +275,8 @@ jobs:
   test_linux-x64-glibc:
     if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     container:
       image: node:18-bookworm
     needs:
@@ -294,6 +300,8 @@ jobs:
   test_linux-x64-musl:
     if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     container:
       image: node:18-alpine
     needs:
@@ -317,6 +325,8 @@ jobs:
   test_win-x64:
     if: ${{ github.event_name != 'workflow_dispatch' }}
     runs-on: windows-2022
+    permissions:
+      contents: read
     needs:
       - build_win-x64
     steps:
@@ -338,6 +348,8 @@ jobs:
   test_darwin-x64:
     if: ${{ false && github.event_name != 'workflow_dispatch' }}
     runs-on: macos-14
+    permissions:
+      contents: read
     needs:
       - build_darwin-x64
     steps:
