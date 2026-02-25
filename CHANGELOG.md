@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/hirosystems/stacks-encoding-native-js/compare/v1.3.0...v1.4.0) (2026-02-25)
+
+### Features
+
+* decode nakamoto block headers ([#32](https://github.com/hirosystems/stacks-encoding-native-js/issues/32)) ([cb106f3](https://github.com/hirosystems/stacks-encoding-native-js/commit/cb106f34cc5f216fa9a0bf0287b01eaf92588ab1))
+
 ## [1.3.0](https://github.com/hirosystems/stacks-encoding-native-js/compare/v1.2.0...v1.3.0) (2026-02-03)
 
 ### Features
