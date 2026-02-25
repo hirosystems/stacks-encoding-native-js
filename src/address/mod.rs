@@ -2,6 +2,7 @@ use std::io::{Cursor, Read};
 
 use byteorder::ReadBytesExt;
 use neon::prelude::*;
+use neon::types::buffer::TypedArray;
 
 use crate::clarity_value::deserialize::TypePrefix;
 use crate::clarity_value::types::{ClarityName, StandardPrincipalData};
@@ -235,7 +236,8 @@ pub fn perf_test_c32_encode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
         .flamegraph(&mut buf)
         .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
 
-    let result = JsBuffer::external(&mut cx, buf);
+    let mut result = cx.buffer(buf.len())?;
+    result.as_mut_slice(&mut cx).copy_from_slice(&buf);
     Ok(result)
 }
 
@@ -265,7 +267,8 @@ pub fn perf_test_c32_decode(mut cx: FunctionContext) -> JsResult<JsBuffer> {
         .flamegraph(&mut buf)
         .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
 
-    let result = JsBuffer::external(&mut cx, buf);
+    let mut result = cx.buffer(buf.len())?;
+    result.as_mut_slice(&mut cx).copy_from_slice(&buf);
     Ok(result)
 }
 

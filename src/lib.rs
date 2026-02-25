@@ -1,5 +1,6 @@
 use git_version::git_version;
 use neon::prelude::*;
+use neon::types::buffer::TypedArray;
 
 use crate::address::{
     bitcoin_to_stacks_address, decode_clarity_value_to_principal, decode_stacks_address,
@@ -11,6 +12,7 @@ use crate::clarity_value::{
 };
 use crate::memo::memo_to_string;
 use crate::post_condition::decode_tx_post_conditions;
+use crate::stacks_block::{decode_nakamoto_block, decode_stacks_block};
 use crate::stacks_tx::decode_transaction;
 
 pub mod address;
@@ -20,6 +22,7 @@ pub mod memo;
 pub mod neon_util;
 pub mod post_condition;
 pub mod serialize_util;
+pub mod stacks_block;
 pub mod stacks_tx;
 
 const GIT_VERSION: &str = git_version!(
@@ -71,40 +74,11 @@ fn create_profiler(mut cx: FunctionContext) -> JsResult<JsFunction> {
         report
             .flamegraph(&mut buf)
             .or_else(|e| cx.throw_error(format!("Error creating flamegraph: {}", e)))?;
-        let result = JsBuffer::external(&mut cx, buf);
+        let mut result = cx.buffer(buf.len())?;
+        result.as_mut_slice(&mut cx).copy_from_slice(&buf);
         Ok(result)
     })
 }
-
-/*
-#[cfg(feature = "profiling")]
-fn stop_profiler_pprof(mut cx: FunctionContext) -> JsResult<JsBuffer> {
-    let mut profiler = PROFILER
-        .lock()
-        .or_else(|e| cx.throw_error(format!("Failed to aquire lock: {}", e))?)?;
-    let report_result = match &*profiler {
-        None => cx.throw_error("No profiler started")?,
-        Some(profiler) => profiler.report().build(),
-    };
-    let report = match report_result {
-        Ok(report) => report,
-        Err(err) => cx.throw_error(format!("Error generating report: {}", err))?,
-    };
-
-    let mut buf = Vec::new();
-
-    let profile = report
-        .pprof()
-        .or_else(|e| cx.throw_error(format!("Error creating pprof: {}", e)))?;
-    pprof::protos::Message::encode(&profile, &mut buf)
-        .or_else(|e| cx.throw_error(format!("Error encoding pprof profile: {}", e)))?;
-
-    *profiler = None;
-
-    let result = JsBuffer::external(&mut cx, buf);
-    Ok(result)
-}
-*/
 
 #[cfg(feature = "profiling")]
 fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
@@ -127,7 +101,8 @@ fn stop_profiler(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 
     *profiler = None;
 
-    let result = JsBuffer::external(&mut cx, buf);
+    let mut result = cx.buffer(buf.len())?;
+    result.as_mut_slice(&mut cx).copy_from_slice(&buf);
     Ok(result)
 }
 
@@ -143,6 +118,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("decodeClarityValueList", decode_clarity_value_array)?;
     cx.export_function("decodePostConditions", decode_tx_post_conditions)?;
     cx.export_function("decodeTransaction", decode_transaction)?;
+    cx.export_function("decodeNakamotoBlock", decode_nakamoto_block)?;
+    cx.export_function("decodeStacksBlock", decode_stacks_block)?;
     cx.export_function("stacksToBitcoinAddress", stacks_to_bitcoin_address)?;
     cx.export_function("bitcoinToStacksAddress", bitcoin_to_stacks_address)?;
     cx.export_function("isValidStacksAddress", is_valid_stacks_address)?;
