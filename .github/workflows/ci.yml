@@ -166,27 +166,27 @@ jobs:
           path: native/win32-x64.node
           if-no-files-found: error
 
-  build_darwin-x64:
-    if: ${{ false }}
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-      - uses: Swatinem/rust-cache@v2
-      - name: npm i
-        run: npm i
-      - name: Build
-        run: npm run build:cargo
-      - uses: actions/upload-artifact@v5
-        with:
-          name: darwin-x64
-          path: native/darwin-x64.node
-          if-no-files-found: error
+  # build_darwin-x64:
+  #   if: ${{ false }}
+  #   runs-on: macos-14
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: x86_64-apple-darwin
+  #     - uses: actions/setup-node@v6
+  #       with:
+  #         node-version-file: .nvmrc
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: npm i
+  #       run: npm i
+  #     - name: Build
+  #       run: npm run build:cargo
+  #     - uses: actions/upload-artifact@v5
+  #       with:
+  #         name: darwin-x64
+  #         path: native/darwin-x64.node
+  #         if-no-files-found: error
 
   build_darwin-arm64:
     runs-on: macos-14
@@ -345,28 +345,28 @@ jobs:
         working-directory: examples
         run: npm i && npm test
 
-  test_darwin-x64:
-    if: ${{ false && github.event_name != 'workflow_dispatch' }}
-    runs-on: macos-14
-    permissions:
-      contents: read
-    needs:
-      - build_darwin-x64
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
-        with:
-          name: darwin-x64
-          path: native
-      - name: npm i
-        run: npm i
-      - name: Build js
-        run: npm run build:ts
-      - name: Test js
-        run: npm run test:js
-      - name: Test examples
-        working-directory: examples
-        run: npm i && npm test
+  # test_darwin-x64:
+  #   if: ${{ false && github.event_name != 'workflow_dispatch' }}
+  #   runs-on: macos-14
+  #   permissions:
+  #     contents: read
+  #   needs:
+  #     - build_darwin-x64
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: actions/download-artifact@v6
+  #       with:
+  #         name: darwin-x64
+  #         path: native
+  #     - name: npm i
+  #       run: npm i
+  #     - name: Build js
+  #       run: npm run build:ts
+  #     - name: Test js
+  #       run: npm run test:js
+  #     - name: Test examples
+  #       working-directory: examples
+  #       run: npm i && npm test
 
   publish-npm:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -377,7 +377,7 @@ jobs:
       - build_linux-x64-glibc
       - build_linux-x64-musl
       - build_win-x64
-      - build_darwin-x64
+      # - build_darwin-x64
       - build_darwin-arm64
     permissions:
       contents: read
