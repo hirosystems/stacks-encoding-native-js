@@ -626,3 +626,231 @@ export interface StacksWorkScore {
     /** String-quoted unsigned integer - work score */
     work: string;
 }
+
+// ============================================================================
+// PoX Synthetic Event Types
+// ============================================================================
+
+export enum PoxEventName {
+    HandleUnlock = 'handle-unlock',
+    StackStx = 'stack-stx',
+    StackIncrease = 'stack-increase',
+    StackExtend = 'stack-extend',
+    DelegateStx = 'delegate-stx',
+    DelegateStackStx = 'delegate-stack-stx',
+    DelegateStackIncrease = 'delegate-stack-increase',
+    DelegateStackExtend = 'delegate-stack-extend',
+    StackAggregationCommit = 'stack-aggregation-commit',
+    StackAggregationCommitIndexed = 'stack-aggregation-commit-indexed',
+    StackAggregationIncrease = 'stack-aggregation-increase',
+    RevokeDelegateStx = 'revoke-delegate-stx',
+}
+
+export interface PoxEventBase {
+    stacker: string;
+    /** String-quoted unsigned integer */
+    locked: string;
+    /** String-quoted unsigned integer */
+    balance: string;
+    /** String-quoted unsigned integer */
+    burnchain_unlock_height: string;
+    pox_addr: string | null;
+    pox_addr_raw: string | null;
+}
+
+export interface PoxEventHandleUnlock extends PoxEventBase {
+    name: PoxEventName.HandleUnlock;
+    data: {
+        /** String-quoted unsigned integer */
+        first_cycle_locked: string;
+        /** String-quoted unsigned integer */
+        first_unlocked_cycle: string;
+    };
+}
+
+export interface PoxEventStackStx extends PoxEventBase {
+    name: PoxEventName.StackStx;
+    data: {
+        /** String-quoted unsigned integer */
+        lock_amount: string;
+        /** String-quoted unsigned integer */
+        lock_period: string;
+        /** String-quoted unsigned integer */
+        start_burn_height: string;
+        /** String-quoted unsigned integer */
+        unlock_burn_height: string;
+        /** Hex string or null */
+        signer_key: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventStackIncrease extends PoxEventBase {
+    name: PoxEventName.StackIncrease;
+    data: {
+        /** String-quoted unsigned integer */
+        increase_by: string;
+        /** String-quoted unsigned integer */
+        total_locked: string;
+        /** Hex string or null */
+        signer_key: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventStackExtend extends PoxEventBase {
+    name: PoxEventName.StackExtend;
+    data: {
+        /** String-quoted unsigned integer */
+        extend_count: string;
+        /** String-quoted unsigned integer */
+        unlock_burn_height: string;
+        /** Hex string or null */
+        signer_key: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventDelegateStx extends PoxEventBase {
+    name: PoxEventName.DelegateStx;
+    data: {
+        /** String-quoted unsigned integer */
+        amount_ustx: string;
+        delegate_to: string;
+        /** String-quoted unsigned integer or null */
+        unlock_burn_height: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventDelegateStackStx extends PoxEventBase {
+    name: PoxEventName.DelegateStackStx;
+    data: {
+        /** String-quoted unsigned integer */
+        lock_amount: string;
+        /** String-quoted unsigned integer */
+        unlock_burn_height: string;
+        /** String-quoted unsigned integer */
+        start_burn_height: string;
+        /** String-quoted unsigned integer */
+        lock_period: string;
+        delegator: string;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventDelegateStackIncrease extends PoxEventBase {
+    name: PoxEventName.DelegateStackIncrease;
+    data: {
+        /** String-quoted unsigned integer */
+        increase_by: string;
+        /** String-quoted unsigned integer */
+        total_locked: string;
+        delegator: string;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventDelegateStackExtend extends PoxEventBase {
+    name: PoxEventName.DelegateStackExtend;
+    data: {
+        /** String-quoted unsigned integer */
+        unlock_burn_height: string;
+        /** String-quoted unsigned integer */
+        extend_count: string;
+        delegator: string;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventStackAggregationCommit extends PoxEventBase {
+    name: PoxEventName.StackAggregationCommit;
+    data: {
+        /** String-quoted unsigned integer */
+        reward_cycle: string;
+        /** String-quoted unsigned integer */
+        amount_ustx: string;
+        /** Hex string or null */
+        signer_key: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventStackAggregationCommitIndexed extends PoxEventBase {
+    name: PoxEventName.StackAggregationCommitIndexed;
+    data: {
+        /** String-quoted unsigned integer */
+        reward_cycle: string;
+        /** String-quoted unsigned integer */
+        amount_ustx: string;
+        /** Hex string or null */
+        signer_key: string | null;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventStackAggregationIncrease extends PoxEventBase {
+    name: PoxEventName.StackAggregationIncrease;
+    data: {
+        /** String-quoted unsigned integer */
+        reward_cycle: string;
+        /** String-quoted unsigned integer */
+        amount_ustx: string;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export interface PoxEventRevokeDelegateStx extends PoxEventBase {
+    name: PoxEventName.RevokeDelegateStx;
+    data: {
+        delegate_to: string;
+        /** String-quoted unsigned integer or null */
+        end_cycle_id: string | null;
+        /** String-quoted unsigned integer or null */
+        start_cycle_id: string | null;
+    };
+}
+
+export type DecodedPoxSyntheticEvent =
+    | PoxEventHandleUnlock
+    | PoxEventStackStx
+    | PoxEventStackIncrease
+    | PoxEventStackExtend
+    | PoxEventDelegateStx
+    | PoxEventDelegateStackStx
+    | PoxEventDelegateStackIncrease
+    | PoxEventDelegateStackExtend
+    | PoxEventStackAggregationCommit
+    | PoxEventStackAggregationCommitIndexed
+    | PoxEventStackAggregationIncrease
+    | PoxEventRevokeDelegateStx;

@@ -1,4 +1,4 @@
-import type { DecodedPostConditionsResult, DecodedTxResult, DecodedNakamotoBlockResult, DecodedStacksBlockResult, ClarityValue, ClarityValueAbstract } from ".";
+import type { DecodedPostConditionsResult, DecodedTxResult, DecodedNakamotoBlockResult, DecodedStacksBlockResult, ClarityValue, ClarityValueAbstract, DecodedPoxSyntheticEvent } from ".";
 
 export function getVersion(): string;
 
@@ -59,6 +59,17 @@ export function decodeClarityValueToPrincipal(clarityValue: string | Buffer) : s
 export function stacksAddressFromParts(version: number, hash160: string | Buffer): string;
 
 export function memoToString(memo: string | Buffer): string;
+
+/**
+ * Decode a serialized Clarity value representing a PoX synthetic print event.
+ * @param arg - Hex string or Buffer containing the serialized Clarity value
+ * @param network - The Stacks network type
+ * @returns The decoded PoX event, or null if the Clarity value is a ResponseErr
+ */
+export function decodePoxSyntheticEvent(
+  arg: string | Buffer,
+  network: 'mainnet' | 'testnet' | 'devnet' | 'mocknet'
+): DecodedPoxSyntheticEvent | null;
 
 export function startProfiler(): string;
 

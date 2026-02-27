@@ -2,6 +2,8 @@ use std::io::{Cursor, Read};
 
 use byteorder::ReadBytesExt;
 use neon::prelude::*;
+#[cfg(feature = "profiling")]
+use neon::types::buffer::TypedArray;
 
 use crate::clarity_value::deserialize::TypePrefix;
 use crate::clarity_value::types::{ClarityName, StandardPrincipalData};
