@@ -2,8 +2,8 @@
 
 `@stacks/codec` is a Node.js [native addon](https://nodejs.org/api/addons.html) library written in
 Rust, which provides functions for decoding binary/wire formats used in the Stacks blockchain.
-Features include Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, and
-more.
+Features include Clarity values, transactions, post-conditions, Stacks and Bitcoin addresses, PoX
+synthetic event parsing, and more.
 
 Various ASM/SIMD optimizations are used in areas which are prone to causing CPU bottlenecks when
 used in hot paths, e.g. decoding raw Clarity values on the fly.
@@ -378,6 +378,34 @@ assert.deepStrictEqual(decoded, {
 });
 ```
 </details>
+
+### Decoding PoX synthetic events
+
+Decode serialized Clarity values from PoX contract log events into structured PoX synthetic event objects. This is useful for parsing stacking, delegation, and unlocking events emitted by the PoX contract.
+
+```ts
+import { decodePoxSyntheticEvent, PoxEventName } from '@stacks/codec';
+
+// Serialized hex string of a PoX synthetic event Clarity value (ResponseOk wrapping a Tuple)
+const rawClarityHex = '0x0700...';
+
+const event = decodePoxSyntheticEvent(rawClarityHex, 'mainnet');
+
+if (event !== null) {
+  console.log(event.name);                      // e.g. 'stack-stx'
+  console.log(event.stacker);                   // e.g. 'SP2J6ZY48GV1EZ5V2V5RB9MP66SW86PYKKNRV9EJ7'
+  console.log(event.locked);                    // String-quoted u128, e.g. '1000000'
+  console.log(event.balance);                   // String-quoted u128, e.g. '500000'
+  console.log(event.burnchain_unlock_height);   // String-quoted u128, e.g. '150000'
+  console.log(event.pox_addr);                  // BTC address string or null
+  console.log(event.pox_addr_raw);              // Hex-encoded raw PoX address or null
+  console.log(event.data);                      // Event-specific fields (varies by event type)
+}
+```
+
+Supported event types: `handle-unlock`, `stack-stx`, `stack-increase`, `stack-extend`, `delegate-stx`, `delegate-stack-stx`, `delegate-stack-increase`, `delegate-stack-extend`, `stack-aggregation-commit`, `stack-aggregation-commit-indexed`, `stack-aggregation-increase`, `revoke-delegate-stx`.
+
+Returns `null` when the Clarity value is a `ResponseErr` (indicating a non-event). Bitcoin address encoding supports P2PKH, P2SH, P2WPKH (segwit v0), P2WSH (segwit v0), and P2TR (taproot/segwit v1) address formats.
 
 ## Project Layout
 

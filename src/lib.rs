@@ -1,5 +1,7 @@
 use git_version::git_version;
 use neon::prelude::*;
+#[cfg(feature = "profiling")]
+use neon::types::buffer::TypedArray;
 
 use crate::address::{
     bitcoin_to_stacks_address, decode_clarity_value_to_principal, decode_stacks_address,
@@ -10,6 +12,7 @@ use crate::clarity_value::{
     decode_clarity_value_type_name,
 };
 use crate::memo::memo_to_string;
+use crate::pox_events::decode_pox_event;
 use crate::post_condition::decode_tx_post_conditions;
 use crate::stacks_block::{decode_nakamoto_block, decode_stacks_block};
 use crate::stacks_tx::decode_transaction;
@@ -19,6 +22,7 @@ pub mod clarity_value;
 pub mod hex;
 pub mod memo;
 pub mod neon_util;
+pub mod pox_events;
 pub mod post_condition;
 pub mod serialize_util;
 pub mod stacks_block;
@@ -129,6 +133,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     )?;
     cx.export_function("stacksAddressFromParts", stacks_address_from_parts)?;
     cx.export_function("memoToString", memo_to_string)?;
+    cx.export_function("decodePoxSyntheticEvent", decode_pox_event)?;
 
     #[cfg(feature = "profiling")]
     {

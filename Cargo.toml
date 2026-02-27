@@ -29,6 +29,7 @@ lazy_static = "1.4.0"
 unicode-segmentation = "1.9.0"
 rand = "0.8.5"
 byteorder = "1.4.3"
+bech32 = "0.11"
 
 [dependencies.pprof]
 version = "0.9.1"
